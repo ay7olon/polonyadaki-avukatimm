@@ -14,15 +14,23 @@ import {
   Flame
 } from 'lucide-react';
 import { LegalCase, UrgencyLevel, CaseStatus, ScreenId } from '../types';
+import { LawyerOption } from '../hooks/useLawyers';
+import { useNowTick } from '../hooks/useNowTick';
+import { getDeadlineInfo } from '../lib/deadline';
+import { DeadlineBadge } from '../components/DeadlineBadge';
 
 interface AdminCaseListScreenProps {
   cases: LegalCase[];
+  lawyers: LawyerOption[];
+  loading?: boolean;
   onSelectCase: (c: LegalCase) => void;
   onNavigate: (screen: ScreenId) => void;
 }
 
 export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
   cases,
+  lawyers,
+  loading,
   onSelectCase,
   onNavigate,
 }) => {
@@ -30,6 +38,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
   const [selectedUrgency, setSelectedUrgency] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedLawyer, setSelectedLawyer] = useState<string>('all');
+  const now = useNowTick();
 
   // Filtering Logic
   const filteredCases = cases.filter(c => {
@@ -39,7 +48,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
     
     const matchesUrgency = selectedUrgency === 'all' || c.urgency === selectedUrgency;
     const matchesStatus = selectedStatus === 'all' || c.status === selectedStatus;
-    const matchesLawyer = selectedLawyer === 'all' || c.assignedLawyer.includes(selectedLawyer);
+    const matchesLawyer = selectedLawyer === 'all' || c.assignedLawyerId === selectedLawyer;
 
     return matchesSearch && matchesUrgency && matchesStatus && matchesLawyer;
   });
@@ -51,33 +60,51 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
       case 'pending_docs':
         return <span className="px-2.5 py-1 rounded-md bg-red-50 border border-red-200 text-red-700 font-bold text-xs animate-pulse">Ek Belge Bekleniyor</span>;
       case 'submitted':
-        return <span className="px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 text-blue-800 font-bold text-xs">Valiliğe Sunuldu</span>;
+        return <span className="px-2.5 py-1 rounded-md bg-navy-soft border border-[#d7dee8] text-navy font-bold text-xs">Valiliğe Sunuldu</span>;
       case 'completed':
         return <span className="px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs">Sonuçlandı</span>;
       default:
-        return <span className="px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold">Atandı</span>;
+        return <span className="px-2.5 py-1 rounded-md bg-navy-soft border border-[#d7dee8] text-navy text-xs font-bold">Atandı</span>;
     }
   };
 
   const criticalCount = cases.filter(c => c.urgency === 'critical').length;
+  const activeCases = cases.filter(c => c.status !== 'completed' && c.status !== 'rejected');
+  const overdueCount = activeCases.filter(c => getDeadlineInfo(c.deadlineAt, now).isOverdue).length;
+  const dueSoonCount = activeCases.filter(c => {
+    const info = getDeadlineInfo(c.deadlineAt, now);
+    return !info.isOverdue && (info.tone === 'critical' || info.tone === 'warning');
+  }).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 py-8 px-4 sm:px-6 lg:px-8 space-y-6 font-sans">
+    <div className="min-h-screen bg-canvas text-navy py-8 px-4 sm:px-6 lg:px-8 space-y-6 font-sans">
       
       {/* Top Admin Header Bar */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[#d7dee8] pb-6">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 rounded bg-slate-900 text-white font-extrabold text-[11px] uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 rounded bg-navy text-white font-extrabold text-[11px] uppercase tracking-wider">
               Avukat & Paralegal Paneli
             </span>
-            <span className="text-xs text-slate-500 font-medium">Polonya Bürosu Derdest Dosya Cetveli</span>
+            <span className="text-xs text-[#5b6b7c] font-medium">Polonya Bürosu Derdest Dosya Cetveli</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 mt-1">Admin Dosya Yönetim Tablosu</h1>
+          <h1 className="text-3xl font-extrabold font-display text-navy mt-1">Admin Dosya Yönetim Tablosu</h1>
         </div>
 
         {/* Urgent Stats Alert */}
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {overdueCount > 0 && (
+            <div className="px-4 py-2 rounded-xl bg-red-600 border border-red-700 flex items-center space-x-2 text-xs text-white shadow-sm animate-pulse">
+              <AlertCircle className="w-4 h-4" />
+              <span><strong className="text-sm">{overdueCount}</strong> Dosyanın Son Tarihi Geçti</span>
+            </div>
+          )}
+          {dueSoonCount > 0 && (
+            <div className="px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 flex items-center space-x-2 text-xs text-amber-900 shadow-sm">
+              <Clock className="w-4 h-4 text-amber-600" />
+              <span><strong className="text-amber-700 text-sm">{dueSoonCount}</strong> Dosyanın Süresi Yaklaşıyor</span>
+            </div>
+          )}
           <div className="px-4 py-2 rounded-xl bg-red-50 border border-red-200 flex items-center space-x-2 text-xs text-red-900 shadow-sm">
             <Flame className="w-4 h-4 text-red-600 animate-bounce" />
             <span><strong className="text-red-700 text-sm">{criticalCount}</strong> Adet Çok Acil Dosya Müdahale Bekliyor</span>
@@ -86,9 +113,9 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
       </div>
 
       {/* FILTER BAR SECTION */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
-        <div className="flex items-center space-x-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-          <SlidersHorizontal className="w-4 h-4 text-red-600" />
+      <div className="bg-white border border-[#d7dee8] rounded-2xl p-4 shadow-sm space-y-4">
+        <div className="flex items-center space-x-2 text-xs font-bold text-[#5b6b7c] uppercase tracking-wider">
+          <SlidersHorizontal className="w-4 h-4 text-navy" />
           <span>Filtreleme & Arama Seçenekleri</span>
         </div>
 
@@ -96,13 +123,13 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
           
           {/* Search Input */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <Search className="w-4 h-4 text-[#5b6b7c] absolute left-3 top-3" />
             <input
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Müşteri adı veya dosya no..."
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-red-600"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-canvas border border-[#d7dee8] text-navy focus:outline-none focus:border-navy"
             />
           </div>
 
@@ -110,7 +137,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
           <select
             value={selectedUrgency}
             onChange={e => setSelectedUrgency(e.target.value)}
-            className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-red-600 font-medium"
+            className="p-2.5 rounded-xl bg-canvas border border-[#d7dee8] text-navy focus:outline-none focus:border-navy font-medium"
           >
             <option value="all">Tüm Aciliyet Seviyeleri</option>
             <option value="critical">🔴 Çok Acil (48 Saat / Kırmızı Kod)</option>
@@ -122,7 +149,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
           <select
             value={selectedStatus}
             onChange={e => setSelectedStatus(e.target.value)}
-            className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-red-600 font-medium"
+            className="p-2.5 rounded-xl bg-canvas border border-[#d7dee8] text-navy focus:outline-none focus:border-navy font-medium"
           >
             <option value="all">Tüm Dosya Durumları</option>
             <option value="pending_docs">Ek Belge Bekleniyor</option>
@@ -135,12 +162,12 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
           <select
             value={selectedLawyer}
             onChange={e => setSelectedLawyer(e.target.value)}
-            className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-red-600 font-medium"
+            className="p-2.5 rounded-xl bg-canvas border border-[#d7dee8] text-navy focus:outline-none focus:border-navy font-medium"
           >
             <option value="all">Tüm Avukatlar</option>
-            <option value="Piotr">Av. Piotr Kowalski</option>
-            <option value="Zeynep">Av. Zeynep Yılmaz</option>
-            <option value="Marek">Av. Marek Nowak</option>
+            {lawyers.map(l => (
+              <option key={l.id} value={l.id}>Av. {l.fullName}</option>
+            ))}
           </select>
 
           {/* Reset Filters Button */}
@@ -151,7 +178,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
               setSelectedStatus('all');
               setSelectedLawyer('all');
             }}
-            className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-800 transition border border-slate-200"
+            className="py-2.5 rounded-xl border border-[#d7dee8] bg-white hover:bg-navy-soft font-bold text-navy transition"
           >
             Filtreleri Sıfırla
           </button>
@@ -160,15 +187,16 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
       </div>
 
       {/* DATA TABLE */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-[#d7dee8] rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-700">
+          <table className="w-full text-left text-xs text-navy">
             
-            <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <thead className="bg-navy-soft border-b border-[#d7dee8] text-[11px] font-bold text-[#5b6b7c] uppercase tracking-wider">
               <tr>
                 <th className="p-4">Dosya Kodu / Müşteri</th>
                 <th className="p-4">Süreç Türü & Şehir</th>
                 <th className="p-4">Aciliyet Etiketi</th>
+                <th className="p-4">Kalan Süre</th>
                 <th className="p-4">Mevcut Durum</th>
                 <th className="p-4">Son Güncelleme</th>
                 <th className="p-4">Atanan Avukat</th>
@@ -176,9 +204,24 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100">
-              {filteredCases.map(c => {
+            <tbody className="divide-y divide-[#d7dee8]">
+              {loading && (
+                <tr>
+                  <td colSpan={8} className="p-10 text-center text-[#5b6b7c]">
+                    <div className="w-6 h-6 border-2 border-[#d7dee8] border-t-navy rounded-full animate-spin mx-auto" />
+                  </td>
+                </tr>
+              )}
+              {!loading && filteredCases.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="p-10 text-center text-[#5b6b7c] text-sm">
+                    Kriterlere uyan dosya bulunamadı.
+                  </td>
+                </tr>
+              )}
+              {!loading && filteredCases.map(c => {
                 const isCritical = c.urgency === 'critical';
+                const deadlineInfo = getDeadlineInfo(c.deadlineAt, now);
 
                 return (
                   <tr
@@ -187,7 +230,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                       onSelectCase(c);
                       onNavigate('admin_case_detail');
                     }}
-                    className={`cursor-pointer transition hover:bg-slate-50 ${
+                    className={`cursor-pointer transition hover:bg-navy-soft ${
                       isCritical
                         ? 'bg-red-50/50 hover:bg-red-50 border-l-4 border-red-600'
                         : ''
@@ -197,17 +240,17 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                     {/* Client & Case Code */}
                     <td className="p-4">
                       <div className="space-y-0.5">
-                        <div className="font-mono font-bold text-red-600 text-xs">{c.caseNumber}</div>
-                        <div className="font-extrabold text-sm text-slate-900">{c.clientName}</div>
-                        <div className="text-[10px] text-slate-500">{c.clientEmail}</div>
+                        <div className="font-mono font-bold text-navy text-xs">{c.caseNumber}</div>
+                        <div className="font-extrabold text-sm text-navy">{c.clientName}</div>
+                        <div className="text-[10px] text-[#5b6b7c]">{c.clientEmail}</div>
                       </div>
                     </td>
 
                     {/* Case Type & City */}
                     <td className="p-4">
                       <div className="space-y-0.5">
-                        <div className="font-bold text-slate-900">{c.caseType}</div>
-                        <div className="text-[11px] text-slate-500">{c.city}</div>
+                        <div className="font-bold text-navy">{c.caseType}</div>
+                        <div className="text-[11px] text-[#5b6b7c]">{c.city}</div>
                       </div>
                     </td>
 
@@ -223,10 +266,15 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                           Acil (15 Gün)
                         </span>
                       ) : (
-                        <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-bold w-fit">
+                        <span className="px-2.5 py-1 rounded bg-navy-soft border border-[#d7dee8] text-[#5b6b7c] text-[10px] font-bold w-fit">
                           Normal
                         </span>
                       )}
+                    </td>
+
+                    {/* Deadline Countdown */}
+                    <td className="p-4">
+                      <DeadlineBadge info={deadlineInfo} />
                     </td>
 
                     {/* Status Badge */}
@@ -235,7 +283,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                     </td>
 
                     {/* Last Update */}
-                    <td className="p-4 text-slate-500 font-mono text-[11px] font-medium">
+                    <td className="p-4 text-[#5b6b7c] font-mono text-[11px] font-medium">
                       {c.updatedAt}
                     </td>
 
@@ -245,9 +293,9 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                         <img
                           src={c.lawyerAvatar}
                           alt={c.assignedLawyer}
-                          className="w-6 h-6 rounded-full object-cover border border-slate-200"
+                          className="w-6 h-6 rounded-full object-cover border border-[#d7dee8]"
                         />
-                        <span className="font-semibold text-slate-800">{c.assignedLawyer}</span>
+                        <span className="font-semibold text-navy">{c.assignedLawyer}</span>
                       </div>
                     </td>
 
@@ -259,10 +307,10 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                           onSelectCase(c);
                           onNavigate('admin_case_detail');
                         }}
-                        className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition flex items-center space-x-1 ml-auto shadow-xs"
+                        className="px-3 py-1.5 rounded-lg bg-navy hover:bg-navy-2 text-white font-bold text-xs transition flex items-center space-x-1 ml-auto shadow-xs"
                       >
                         <span>Detay / Yönet</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-red-400" />
+                        <ChevronRight className="w-3.5 h-3.5 text-gold" />
                       </button>
                     </td>
 

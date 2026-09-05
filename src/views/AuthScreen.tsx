@@ -1,90 +1,218 @@
-import React, { useState } from 'react';
-import { 
-  Scale, 
-  Lock, 
-  Mail, 
-  Phone, 
-  User, 
-  Globe, 
-  ArrowRight, 
-  CheckCircle2, 
+import React, { useEffect, useState } from 'react';
+import {
+  Scale,
+  Lock,
+  Mail,
+  Phone,
+  User,
+  Globe,
+  ArrowRight,
   ShieldCheck,
-  KeyRound
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
 import { Language, ScreenId } from '../types';
-import { UI_TRANSLATIONS } from '../data/mockData';
+import { useAuth } from '../hooks/useAuth';
+import { isValidEmail, isValidFullName, isValidPhone } from '../lib/validation';
 
 interface AuthScreenProps {
   currentLanguage: Language;
   onLanguageChange: (lang: Language) => void;
   onNavigate: (screen: ScreenId) => void;
-  onLoginSuccess: (role: 'client' | 'admin') => void;
+  passwordRecoveryPending?: boolean;
 }
+
+const DEMO_CLIENT_EMAIL = 'mehmet@test.com';
+const DEMO_LAWYER_EMAIL = 'ahmet@test.com';
+const DEMO_PASSWORD = 'test1234';
+
+type AuthMode = 'login' | 'register' | 'forgot' | 'update_password';
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
   currentLanguage,
   onLanguageChange,
   onNavigate,
-  onLoginSuccess,
+  passwordRecoveryPending = false,
 }) => {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('ahmet.yilmaz@gmail.com');
-  const [password, setPassword] = useState('••••••••••••');
-  const [name, setName] = useState('Ahmet Yılmaz');
-  const [phone, setPhone] = useState('+48 570 123 456');
-  const [rodoAgreed, setRodoAgreed] = useState(true);
+  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
 
-  const t = UI_TRANSLATIONS[currentLanguage];
+  const [mode, setMode] = useState<AuthMode>(passwordRecoveryPending ? 'update_password' : 'login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('+48 ');
+  const [rodoAgreed, setRodoAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (passwordRecoveryPending) {
+      setMode('update_password');
+      setErrorMessage(null);
+      setInfoMessage('Şifre sıfırlama bağlantısı doğrulandı. Yeni şifrenizi belirleyin.');
+    }
+  }, [passwordRecoveryPending]);
+
+  const switchMode = (next: AuthMode) => {
+    setMode(next);
+    setErrorMessage(null);
+    setInfoMessage(null);
+    setPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLoginSuccess('client');
-    onNavigate('client_dashboard');
+    setErrorMessage(null);
+    setInfoMessage(null);
+
+    if (mode === 'forgot') {
+      if (!isValidEmail(email)) {
+        setErrorMessage('Lütfen geçerli bir e-posta adresi girin.');
+        return;
+      }
+      setSubmitting(true);
+      const { error } = await resetPassword(email);
+      setSubmitting(false);
+      if (error) {
+        setErrorMessage(error);
+        return;
+      }
+      setInfoMessage(
+        'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Gelen kutunuzu (ve spam klasörünü) kontrol edin.',
+      );
+      return;
+    }
+
+    if (mode === 'update_password') {
+      if (password.length < 6) {
+        setErrorMessage('Şifre en az 6 karakter olmalıdır.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setErrorMessage('Şifreler eşleşmiyor.');
+        return;
+      }
+      setSubmitting(true);
+      const { error } = await updatePassword(password);
+      setSubmitting(false);
+      if (error) {
+        setErrorMessage(error);
+        return;
+      }
+      setInfoMessage('Şifreniz güncellendi. Panele yönlendiriliyorsunuz…');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setErrorMessage('Lütfen geçerli bir e-posta adresi girin.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage('Şifre en az 6 karakter olmalıdır.');
+      return;
+    }
+
+    if (mode === 'register') {
+      if (!isValidFullName(name)) {
+        setErrorMessage('Lütfen adınızı ve soyadınızı eksiksiz girin.');
+        return;
+      }
+      if (!isValidPhone(phone)) {
+        setErrorMessage('Lütfen geçerli bir telefon numarası girin (örn. +48 570 123 456).');
+        return;
+      }
+      if (!rodoAgreed) {
+        setErrorMessage('Devam etmek için RODO / kişisel veri onayını kabul etmeniz gerekiyor.');
+        return;
+      }
+    }
+
+    setSubmitting(true);
+    const { error } =
+      mode === 'login'
+        ? await signIn(email, password)
+        : await signUp({ email, password, fullName: name, phone, rodoAccepted: rodoAgreed });
+    setSubmitting(false);
+
+    if (error) {
+      setErrorMessage(error);
+      return;
+    }
+
+    if (mode === 'register') {
+      setInfoMessage(
+        'Hesap oluşturuldu. E-posta doğrulaması açıksa gelen kutunuzdaki bağlantıyı onaylayın, ardından giriş yapın.',
+      );
+    }
   };
 
-  const handleAdminDemoLogin = () => {
-    onLoginSuccess('admin');
-    onNavigate('admin_case_list');
+  const handleDemoLogin = async (demoEmail: string) => {
+    setErrorMessage(null);
+    setInfoMessage(null);
+    setSubmitting(true);
+    const { error } = await signIn(demoEmail, DEMO_PASSWORD);
+    setSubmitting(false);
+    if (error) {
+      setErrorMessage(`Demo giriş başarısız: ${error}`);
+    }
   };
+
+  const inputClass =
+    'w-full pl-9 pr-3 py-2.5 rounded-md bg-canvas border border-[#d7dee8] text-navy focus:outline-none focus:border-navy';
+
+  const heading =
+    mode === 'register'
+      ? 'Hukuki Danışmanlık Hesabı Aç'
+      : mode === 'forgot'
+        ? 'Şifrenizi Sıfırlayın'
+        : mode === 'update_password'
+          ? 'Yeni Şifre Belirleyin'
+          : 'Müşteri Portalına Giriş Yap';
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      
-      {/* Background ambient light */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-red-100/40 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-canvas text-navy flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(700px_320px_at_50%_0%,rgba(11,31,58,0.08),transparent_60%)]" />
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md space-y-4 text-center">
-        
-        {/* Brand Logo & Name */}
-        <div 
+      <div className="sm:mx-auto sm:w-full sm:max-w-md space-y-4 text-center relative z-10">
+        <div
           onClick={() => onNavigate('landing')}
-          className="inline-flex items-center space-x-2 cursor-pointer group"
+          className="inline-flex items-center space-x-2.5 cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-white shadow-md">
+          <div className="w-10 h-10 rounded-lg bg-navy border border-navy-2 flex items-center justify-center text-gold">
             <Scale className="w-5 h-5" />
           </div>
-          <div className="flex items-center space-x-1">
-            <span className="font-extrabold text-xl text-slate-900 tracking-tight">POLONYADAKİ</span>
-            <span className="font-extrabold text-xl text-red-600 tracking-tight">AVUKATIM</span>
+          <div className="text-left">
+            <div className="font-display text-xl font-semibold text-navy tracking-tight leading-tight">
+              Polonyadaki Avukatım
+            </div>
+            <div className="text-[10px] text-gold font-semibold tracking-[0.14em] uppercase">
+              Kancelaria
+            </div>
           </div>
         </div>
 
-        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-          {mode === 'login' ? 'Müşteri Portalına Giriş Yap' : 'Hukuki Danışmanlık Hesabı Aç'}
-        </h2>
-        <p className="text-xs text-slate-600 font-medium">
-          Polonya'daki dava ve Karta Pobytu başvurularınızı güvenle yönetin
+        <h2 className="font-display text-2xl font-semibold text-navy tracking-tight">{heading}</h2>
+        <p className="text-xs text-[#5b6b7c] font-medium">
+          {mode === 'forgot'
+            ? 'Kayıtlı e-posta adresinize sıfırlama bağlantısı göndereceğiz'
+            : mode === 'update_password'
+              ? 'Güvenliğiniz için güçlü bir şifre seçin'
+              : 'Polonya\'daki dava ve Karta Pobytu başvurularınızı güvenle yönetin'}
         </p>
 
-        {/* Language Switcher Component inside Auth */}
-        <div className="inline-flex items-center bg-white p-1 rounded-lg border border-slate-200 text-xs shadow-sm">
-          <Globe className="w-3.5 h-3.5 text-slate-500 ml-2 mr-1" />
+        <div className="inline-flex items-center bg-white p-1 rounded-md border border-[#d7dee8] text-xs">
+          <Globe className="w-3.5 h-3.5 text-[#5b6b7c] ml-2 mr-1" />
           {(['TR', 'PL', 'EN'] as Language[]).map(lang => (
             <button
               key={lang}
               onClick={() => onLanguageChange(lang)}
               className={`px-2.5 py-1 rounded font-bold transition ${
-                currentLanguage === lang ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                currentLanguage === lang ? 'bg-navy text-white' : 'text-[#5b6b7c] hover:text-navy'
               }`}
             >
               {lang}
@@ -93,116 +221,147 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         </div>
       </div>
 
-      {/* Main Centered Form Card */}
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
-          
-          {/* Segmented Control Tabs (Giriş Yap / Kayıt Ol) */}
-          <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
-            <button
-              onClick={() => setMode('login')}
-              className={`py-2 rounded-lg transition ${
-                mode === 'login' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Giriş Yap
-            </button>
-            <button
-              onClick={() => setMode('register')}
-              className={`py-2 rounded-lg transition ${
-                mode === 'register' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Kayıt Ol
-            </button>
-          </div>
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="bg-white border border-[#d7dee8] rounded-lg p-6 sm:p-8 space-y-6">
+          {(mode === 'login' || mode === 'register') && (
+            <div className="grid grid-cols-2 p-1 bg-canvas rounded-md border border-[#d7dee8] text-xs font-bold">
+              <button
+                onClick={() => switchMode('login')}
+                className={`py-2 rounded-md transition ${
+                  mode === 'login' ? 'bg-navy text-white' : 'text-[#5b6b7c] hover:text-navy'
+                }`}
+              >
+                Giriş Yap
+              </button>
+              <button
+                onClick={() => switchMode('register')}
+                className={`py-2 rounded-md transition ${
+                  mode === 'register' ? 'bg-navy text-white' : 'text-[#5b6b7c] hover:text-navy'
+                }`}
+              >
+                Kayıt Ol
+              </button>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="flex items-start space-x-2 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {infoMessage && (
+            <div className="flex items-start space-x-2 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>{infoMessage}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-            
-            {/* Register specific: Full Name */}
             {mode === 'register' && (
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Ad Soyad
-                </label>
+                <label className="block font-semibold text-navy mb-1">Ad Soyad</label>
                 <div className="relative">
-                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <User className="w-4 h-4 text-[#5b6b7c] absolute left-3 top-3" />
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="Örn: Ahmet Yılmaz"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-red-600"
+                    className={inputClass}
                   />
                 </div>
               </div>
             )}
 
-            {/* Email Field */}
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                E-posta Adresi
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="ornek@domain.com"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-red-600"
-                />
+            {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
+              <div>
+                <label className="block font-semibold text-navy mb-1">E-posta Adresi</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-[#5b6b7c] absolute left-3 top-3" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="ornek@domain.com"
+                    className={inputClass}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Phone Field (for Register) */}
             {mode === 'register' && (
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-semibold text-navy mb-1">
                   Telefon Numarası (Polonya / Türkiye)
                 </label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Phone className="w-4 h-4 text-[#5b6b7c] absolute left-3 top-3" />
                   <input
                     type="tel"
                     required
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
                     placeholder="+48 570 123 456"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-red-600"
+                    className={inputClass}
                   />
                 </div>
               </div>
             )}
 
-            {/* Password Field */}
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="font-semibold text-slate-700">
-                  Şifre
+            {(mode === 'login' || mode === 'register' || mode === 'update_password') && (
+              <div>
+                <label className="block font-semibold text-navy mb-1">
+                  {mode === 'update_password' ? 'Yeni Şifre' : 'Şifre'}
                 </label>
-                {mode === 'login' && (
-                  <a href="#" className="text-[11px] text-red-600 hover:underline font-semibold">
-                    Şifremi Unuttum?
-                  </a>
-                )}
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#5b6b7c] absolute left-3 top-3" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="En az 6 karakter"
+                    className={inputClass}
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-red-600"
-                />
-              </div>
-            </div>
+            )}
 
-            {/* RODO / GDPR Checkbox for Register */}
+            {mode === 'update_password' && (
+              <div>
+                <label className="block font-semibold text-navy mb-1">Yeni Şifre (Tekrar)</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#5b6b7c] absolute left-3 top-3" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Şifreyi tekrar girin"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            )}
+
+            {mode === 'login' && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => switchMode('forgot')}
+                  className="text-[11px] font-semibold text-navy hover:text-gold transition"
+                >
+                  Şifremi unuttum
+                </button>
+              </div>
+            )}
+
             {mode === 'register' && (
               <div className="flex items-start space-x-2 pt-1">
                 <input
@@ -210,57 +369,88 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   id="rodo"
                   checked={rodoAgreed}
                   onChange={e => setRodoAgreed(e.target.checked)}
-                  className="mt-0.5 rounded border-slate-300 text-red-600 focus:ring-red-500 bg-slate-50"
+                  className="mt-0.5 rounded border-[#d7dee8] text-navy focus:ring-navy bg-canvas"
                 />
-                <label htmlFor="rodo" className="text-[11px] text-slate-600 leading-normal">
+                <label htmlFor="rodo" className="text-[11px] text-[#5b6b7c] leading-normal">
                   Polonya Kişisel Verilerin Korunması Yasası (RODO / RODO Art. 6) uyarınca bilgilerimin hukuki danışmanlık kapsamında işlenmesini onaylıyorum.
                 </label>
               </div>
             )}
 
-            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 font-bold text-white text-sm shadow-md transition flex items-center justify-center space-x-2 mt-2"
+              disabled={submitting}
+              className="w-full py-3 rounded-md bg-gold hover:brightness-105 disabled:opacity-60 disabled:cursor-not-allowed font-bold text-navy text-sm transition flex items-center justify-center space-x-2 mt-2"
             >
-              <span>{mode === 'login' ? 'Müşteri Paneline Giriş Yap' : 'Hesabımı Oluştur ve Devam Et'}</span>
-              <ArrowRight className="w-4 h-4" />
+              {submitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <span>
+                    {mode === 'login'
+                      ? 'Müşteri Paneline Giriş Yap'
+                      : mode === 'register'
+                        ? 'Hesabımı Oluştur ve Devam Et'
+                        : mode === 'forgot'
+                          ? 'Sıfırlama Bağlantısı Gönder'
+                          : 'Şifreyi Güncelle'}
+                  </span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
+
+            {mode === 'register' && (
+              <p className="text-[11px] text-[#5b6b7c] text-center">
+                Kayıt sonrası e-posta adresinize gönderilen doğrulama bağlantısına tıklamanız gerekebilir.
+              </p>
+            )}
           </form>
 
-          {/* Quick Demo Login Presets for Development Testing */}
-          <div className="pt-4 border-t border-slate-200 space-y-2">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">
-              Hızlı Demo Test Girişleri:
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => {
-                  onLoginSuccess('client');
-                  onNavigate('client_dashboard');
-                }}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left space-y-0.5 group transition"
-              >
-                <div className="flex items-center space-x-1 text-slate-900 font-bold text-[11px]">
-                  <User className="w-3 h-3 text-red-600" />
-                  <span>Müşteri Demosu</span>
-                </div>
-                <div className="text-[10px] text-slate-500">Ahmet Yılmaz (Karta Pobytu)</div>
-              </button>
+          {(mode === 'forgot' || mode === 'update_password') && !passwordRecoveryPending && (
+            <button
+              type="button"
+              onClick={() => switchMode('login')}
+              className="w-full text-center text-xs font-semibold text-navy hover:text-gold transition"
+            >
+              Giriş ekranına dön
+            </button>
+          )}
 
-              <button
-                onClick={handleAdminDemoLogin}
-                className="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-left space-y-0.5 group transition"
-              >
-                <div className="flex items-center space-x-1 text-amber-900 font-bold text-[11px]">
-                  <ShieldCheck className="w-3 h-3 text-amber-700" />
-                  <span>Avukat Demosu</span>
-                </div>
-                <div className="text-[10px] text-amber-800">Av. Piotr Kowalski</div>
-              </button>
+          {import.meta.env.DEV && mode === 'login' && (
+            <div className="pt-4 border-t border-[#d7dee8] space-y-2">
+              <p className="text-[10px] font-bold text-[#5b6b7c] uppercase tracking-wider text-center">
+                Hızlı Demo Test Girişleri (sadece geliştirme ortamı):
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin(DEMO_CLIENT_EMAIL)}
+                  disabled={submitting}
+                  className="p-2 rounded-md bg-canvas hover:bg-navy-soft border border-[#d7dee8] text-left space-y-0.5 transition disabled:opacity-60"
+                >
+                  <div className="flex items-center space-x-1 text-navy font-bold text-[11px]">
+                    <User className="w-3 h-3 text-gold" />
+                    <span>Müşteri Demosu</span>
+                  </div>
+                  <div className="text-[10px] text-[#5b6b7c]">Mehmet · mehmet@test.com</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin(DEMO_LAWYER_EMAIL)}
+                  disabled={submitting}
+                  className="p-2 rounded-md bg-navy-soft hover:bg-navy/10 border border-[#d7dee8] text-left space-y-0.5 transition disabled:opacity-60"
+                >
+                  <div className="flex items-center space-x-1 text-navy font-bold text-[11px]">
+                    <ShieldCheck className="w-3 h-3 text-gold" />
+                    <span>Avukat Demosu</span>
+                  </div>
+                  <div className="text-[10px] text-[#5b6b7c]">Ahmet · ahmet@test.com</div>
+                </button>
+              </div>
             </div>
-          </div>
-
+          )}
         </div>
       </div>
     </div>

@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
-import { Language, ScreenId, LegalCase, CaseStatus } from './types';
-import { INITIAL_CASES } from './data/mockData';
+import React, { useEffect, useState } from 'react';
+import { Language, ScreenId, LegalCase, CaseStatus, LawyerNote } from './types';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
-import { CursorNotesDrawer } from './components/CursorNotesDrawer';
+import { useAuth } from './hooks/useAuth';
+import { useCases } from './hooks/useCases';
+import { useLawyers } from './hooks/useLawyers';
+import { useToast } from './hooks/useToast';
+import { supabase } from './lib/supabaseClient';
+import { formatFileSize, uploadCaseDocumentFile } from './lib/storage';
 
 // Views
 import { LandingScreen } from './views/LandingScreen';
@@ -15,18 +19,100 @@ import { MessagingScreen } from './views/MessagingScreen';
 import { AdminCaseListScreen } from './views/AdminCaseListScreen';
 import { AdminCaseDetailScreen } from './views/AdminCaseDetailScreen';
 
+const PUBLIC_SCREENS: ScreenId[] = ['landing', 'auth'];
+const CLIENT_SCREENS: ScreenId[] = ['client_dashboard', 'new_application', 'case_timeline', 'messaging'];
+const STAFF_SCREENS: ScreenId[] = ['admin_case_list', 'admin_case_detail'];
+
+function EmptyCaseState({
+  casesLoading,
+  onNavigate,
+}: {
+  casesLoading: boolean;
+  onNavigate: (screen: ScreenId) => void;
+}) {
+  if (casesLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#d7dee8] border-t-navy rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4 space-y-4">
+      <h2 className="font-display text-xl font-semibold text-navy">Henüz bir dosyanız bulunmuyor</h2>
+      <p className="text-sm text-[#5b6b7c] max-w-sm">
+        Yeni bir başvuru oluşturduğunuzda dosya süreci, mesajlaşma ve evrak takibi burada görüntülenecek.
+      </p>
+      <button
+        onClick={() => onNavigate('new_application')}
+        className="px-5 py-2.5 rounded-md bg-navy hover:bg-navy-2 text-white font-bold text-sm shadow-sm transition"
+      >
+        Yeni Başvuru Başlat
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
+  const {
+    session,
+    profile,
+    loading: authLoading,
+    signOut,
+    updateProfile,
+    passwordRecoveryPending,
+  } = useAuth();
+  const { showError, showSuccess } = useToast();
+
   const [currentLanguage, setCurrentLanguage] = useState<Language>('TR');
   const [activeScreen, setActiveScreen] = useState<ScreenId>('landing');
-  const [userRole, setUserRole] = useState<'client' | 'admin'>('client');
-  const [showCursorNotes, setShowCursorNotes] = useState<boolean>(false);
-  const [isMobileSimulated, setIsMobileSimulated] = useState<boolean>(false);
 
-  // State for all cases in law firm database
-  const [cases, setCases] = useState<LegalCase[]>(INITIAL_CASES);
-  const [selectedCaseId, setSelectedCaseId] = useState<string>('case-101');
+  // Cases are loaded from Supabase (RLS-scoped: own cases for clients, all cases for staff).
+  const { cases, setCases, loading: casesLoading, error: casesError, refetch: refetchCases } = useCases(session);
+  const [selectedCaseId, setSelectedCaseId] = useState<string>('');
 
-  const activeCase = cases.find(c => c.id === selectedCaseId) || cases[0];
+  const activeCase = cases.find(c => c.id === selectedCaseId) ?? cases[0];
+  const isStaff = profile?.role === 'lawyer' || profile?.role === 'admin';
+
+  // Lawyer roster for admin assignment/filtering UI (staff-only; RLS scopes it).
+  const { lawyers } = useLawyers(isStaff);
+
+  // Route guard: keep the active screen consistent with the real auth session/role.
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (passwordRecoveryPending) {
+      setActiveScreen('auth');
+      return;
+    }
+
+    if (!session && !PUBLIC_SCREENS.includes(activeScreen)) {
+      setActiveScreen('auth');
+      return;
+    }
+
+    if (session && profile) {
+      if (STAFF_SCREENS.includes(activeScreen) && !isStaff) {
+        setActiveScreen('client_dashboard');
+        return;
+      }
+      if (CLIENT_SCREENS.includes(activeScreen) && isStaff) {
+        setActiveScreen('admin_case_list');
+        return;
+      }
+      if (activeScreen === 'auth') {
+        setActiveScreen(isStaff ? 'admin_case_list' : 'client_dashboard');
+      }
+    }
+  }, [session, profile, authLoading, activeScreen, isStaff, passwordRecoveryPending]);
+
+  useEffect(() => {
+    if (casesError) {
+      showError(`Dosyalar yüklenirken bir hata oluştu: ${casesError}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [casesError]);
 
   // State Handlers
   const handleNavigate = (screenId: ScreenId, caseId?: string) => {
@@ -37,22 +123,45 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleToggleRole = () => {
-    const nextRole = userRole === 'client' ? 'admin' : 'client';
-    setUserRole(nextRole);
-    if (nextRole === 'admin') {
-      setActiveScreen('admin_case_list');
-    } else {
-      setActiveScreen('client_dashboard');
+  const handleLogout = async () => {
+    await signOut();
+    setActiveScreen('landing');
+  };
+
+  const handleCaseSubmitted = async (newCaseId: string) => {
+    await refetchCases();
+    setSelectedCaseId(newCaseId);
+    handleNavigate('case_timeline', newCaseId);
+  };
+
+  const handleUploadDocument = async (caseId: string, file: File) => {
+    const { path, error: uploadError } = await uploadCaseDocumentFile(caseId, file);
+    if (uploadError) {
+      showError(`Dosya yüklenemedi: ${uploadError}`);
+      return;
     }
+    const { error: insertError } = await supabase.from('case_documents').insert({
+      case_id: caseId,
+      name: file.name,
+      size: formatFileSize(file.size),
+      type: file.name.split('.').pop()?.toLowerCase() ?? 'dosya',
+      status: 'pending',
+      storage_path: path,
+    });
+    if (insertError) {
+      showError(`Belge kaydı başarısız: ${insertError.message}`);
+      return;
+    }
+    showSuccess('Evrak başarıyla yüklendi.');
+    await refetchCases();
   };
 
-  const handleAddCase = (newCase: LegalCase) => {
-    setCases(prev => [newCase, ...prev]);
-    setSelectedCaseId(newCase.id);
-  };
-
-  const handleUpdateCaseStatus = (caseId: string, newStatus: CaseStatus) => {
+  const handleUpdateCaseStatus = async (caseId: string, newStatus: CaseStatus) => {
+    const { error } = await supabase.from('legal_cases').update({ status: newStatus }).eq('id', caseId);
+    if (error) {
+      showError(`Dosya durumu güncellenemedi: ${error.message}`);
+      return;
+    }
     setCases(prev =>
       prev.map(c => {
         if (c.id === caseId) {
@@ -70,9 +179,18 @@ export default function App() {
         return c;
       })
     );
+    showSuccess('Dosya durumu güncellendi.');
   };
 
-  const handleApproveDocument = (caseId: string, docId: string) => {
+  const handleApproveDocument = async (caseId: string, docId: string) => {
+    const { error } = await supabase
+      .from('case_documents')
+      .update({ status: 'approved', rejection_reason: null })
+      .eq('id', docId);
+    if (error) {
+      showError(`Belge onaylanamadı: ${error.message}`);
+      return;
+    }
     setCases(prev =>
       prev.map(c => {
         if (c.id === caseId) {
@@ -86,9 +204,25 @@ export default function App() {
         return c;
       })
     );
+    showSuccess('Belge onaylandı.');
   };
 
-  const handleRejectDocument = (caseId: string, docId: string, reason: string) => {
+  const handleRejectDocument = async (caseId: string, docId: string, reason: string) => {
+    const { error: docError } = await supabase
+      .from('case_documents')
+      .update({ status: 'rejected', rejection_reason: reason })
+      .eq('id', docId);
+    if (docError) {
+      showError(`Belge reddedilemedi: ${docError.message}`);
+      return;
+    }
+    const { error: caseError } = await supabase
+      .from('legal_cases')
+      .update({ status: 'pending_docs' })
+      .eq('id', caseId);
+    if (caseError) {
+      showError(`Dosya durumu güncellenemedi: ${caseError.message}`);
+    }
     setCases(prev =>
       prev.map(c => {
         if (c.id === caseId) {
@@ -103,73 +237,85 @@ export default function App() {
         return c;
       })
     );
+    showSuccess('Belge reddedildi, müşteriye bildirildi.');
   };
 
-  const handleAddInternalNote = (caseId: string, noteText: string) => {
+  const handleAddInternalNote = async (caseId: string, noteText: string) => {
+    if (!session) return;
+    const { data, error } = await supabase
+      .from('case_internal_notes')
+      .insert({ case_id: caseId, author_id: session.user.id, content: noteText, is_private: true })
+      .select('id, content, created_at')
+      .single();
+
+    if (error || !data) {
+      showError(`İç not eklenemedi: ${error?.message ?? 'Bilinmeyen hata'}`);
+      return;
+    }
+
+    const newNote: LawyerNote = {
+      id: data.id,
+      author: profile?.full_name || 'Avukat',
+      date: new Date(data.created_at).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' }),
+      content: data.content,
+      isPrivate: true,
+    };
+
     setCases(prev =>
-      prev.map(c => {
-        if (c.id === caseId) {
-          const newNote = {
-            id: `note-${Date.now()}`,
-            author: userRole === 'admin' ? 'Av. Piotr Kowalski' : 'Müşteri Hizmetleri',
-            date: new Date().toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' }),
-            content: noteText,
-            isPrivate: true,
-          };
-          return {
-            ...c,
-            internalNotes: [...c.internalNotes, newNote],
-          };
-        }
-        return c;
-      })
+      prev.map(c => (c.id === caseId ? { ...c, internalNotes: [...c.internalNotes, newNote] } : c))
     );
   };
 
-  const handleSendMessage = (caseId: string, text: string, attachmentName?: string) => {
+  const handleAssignLawyer = async (caseId: string, lawyerId: string) => {
+    const { error } = await supabase
+      .from('legal_cases')
+      .update({ assigned_lawyer_id: lawyerId })
+      .eq('id', caseId);
+
+    if (error) {
+      showError(`Avukat atanamadı: ${error.message}`);
+      return;
+    }
+
+    const lawyer = lawyers.find(l => l.id === lawyerId);
     setCases(prev =>
-      prev.map(c => {
-        if (c.id === caseId) {
-          const isLawyer = userRole === 'admin';
-          const newMsg = {
-            id: `msg-${Date.now()}`,
-            senderId: isLawyer ? 'lawyer-1' : 'client-1',
-            senderName: isLawyer ? 'Av. Piotr Kowalski' : c.clientName,
-            senderRole: isLawyer ? ('lawyer' as const) : ('client' as const),
-            avatar: isLawyer ? c.lawyerAvatar : undefined,
-            text,
-            timestamp: new Date().toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' }),
-            attachments: attachmentName ? [{ name: attachmentName, size: '2.1 MB', type: 'pdf' }] : undefined,
-          };
-          return {
-            ...c,
-            messages: [...c.messages, newMsg],
-          };
-        }
-        return c;
-      })
+      prev.map(c =>
+        c.id === caseId
+          ? {
+              ...c,
+              assignedLawyerId: lawyerId,
+              assignedLawyer: lawyer?.fullName ?? c.assignedLawyer,
+              lawyerAvatar: lawyer?.avatarUrl ?? c.lawyerAvatar,
+            }
+          : c
+      )
     );
+    showSuccess(`Dosya ${lawyer?.fullName ?? 'seçilen avukata'} atandı.`);
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <div className="w-8 h-8 border-2 border-[#d7dee8] border-t-navy rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col selection:bg-red-600 selection:text-white">
+    <div className="min-h-screen bg-canvas text-navy font-sans flex flex-col selection:bg-navy selection:text-white">
       
-      {/* Header Bar with Screen Switcher & Lang Switcher */}
       <Header
         currentLanguage={currentLanguage}
         onLanguageChange={setCurrentLanguage}
         activeScreen={activeScreen}
         onNavigate={handleNavigate}
-        userRole={userRole}
-        onToggleRole={handleToggleRole}
-        showNotes={showCursorNotes}
-        onToggleNotes={() => setShowCursorNotes(!showCursorNotes)}
-        isMobileSimulated={isMobileSimulated}
-        onToggleMobileSimulated={() => setIsMobileSimulated(!isMobileSimulated)}
+        isAuthenticated={!!session}
+        userRole={profile?.role ?? null}
+        userFullName={profile?.full_name ?? null}
+        onLogout={handleLogout}
       />
 
-      {/* Main Screen Renderer Wrapper */}
-      <div className={`flex-1 ${isMobileSimulated ? 'max-w-md mx-auto my-6 border-8 border-slate-900 rounded-3xl overflow-hidden shadow-2xl bg-slate-50 ring-1 ring-slate-300' : ''}`}>
+      <div className="flex-1">
         
         {activeScreen === 'landing' && (
           <LandingScreen
@@ -183,77 +329,96 @@ export default function App() {
             currentLanguage={currentLanguage}
             onLanguageChange={setCurrentLanguage}
             onNavigate={handleNavigate}
-            onLoginSuccess={(role) => {
-              setUserRole(role);
-              if (role === 'admin') setActiveScreen('admin_case_list');
-              else setActiveScreen('client_dashboard');
-            }}
+            passwordRecoveryPending={passwordRecoveryPending}
           />
         )}
 
         {activeScreen === 'client_dashboard' && (
           <ClientDashboardScreen
             cases={cases}
+            loading={casesLoading}
+            currentUserName={profile?.full_name || 'Müşteri'}
+            currentUserEmail={profile?.email || session?.user.email || ''}
+            currentUserPhone={profile?.phone || ''}
+            currentLanguagePref={profile?.language_pref || currentLanguage}
+            onUpdateProfile={updateProfile}
             onNavigate={handleNavigate}
             onSelectCase={(c) => setSelectedCaseId(c.id)}
           />
         )}
 
-        {activeScreen === 'new_application' && (
+        {activeScreen === 'new_application' && session && (
           <NewApplicationWizardScreen
-            onAddCase={handleAddCase}
+            currentUser={{
+              id: session.user.id,
+              fullName: profile?.full_name || '',
+              phone: profile?.phone || '',
+              email: profile?.email || session.user.email || '',
+            }}
+            onSubmitted={handleCaseSubmitted}
             onNavigate={handleNavigate}
           />
         )}
 
         {activeScreen === 'case_timeline' && (
-          <CaseTimelineScreen
-            currentCase={activeCase}
-            onNavigate={handleNavigate}
-          />
+          activeCase ? (
+            <CaseTimelineScreen
+              currentCase={activeCase}
+              onNavigate={handleNavigate}
+              onUploadDocument={handleUploadDocument}
+            />
+          ) : (
+            <EmptyCaseState casesLoading={casesLoading} onNavigate={handleNavigate} />
+          )
         )}
 
-        {activeScreen === 'messaging' && (
-          <MessagingScreen
-            cases={cases}
-            activeCaseId={selectedCaseId}
-            onNavigate={handleNavigate}
-            onSendMessage={handleSendMessage}
-          />
+        {activeScreen === 'messaging' && session && profile && (
+          cases.length > 0 ? (
+            <MessagingScreen
+              cases={cases}
+              activeCaseId={selectedCaseId}
+              currentUserId={session.user.id}
+              currentUserRole={profile.role}
+              onNavigate={handleNavigate}
+            />
+          ) : (
+            <EmptyCaseState casesLoading={casesLoading} onNavigate={handleNavigate} />
+          )
         )}
 
         {activeScreen === 'admin_case_list' && (
           <AdminCaseListScreen
             cases={cases}
+            lawyers={lawyers}
+            loading={casesLoading}
             onSelectCase={(c) => setSelectedCaseId(c.id)}
             onNavigate={handleNavigate}
           />
         )}
 
         {activeScreen === 'admin_case_detail' && (
-          <AdminCaseDetailScreen
-            currentCase={activeCase}
-            onUpdateCaseStatus={handleUpdateCaseStatus}
-            onApproveDocument={handleApproveDocument}
-            onRejectDocument={handleRejectDocument}
-            onAddInternalNote={handleAddInternalNote}
-            onSendMessage={handleSendMessage}
-            onNavigate={handleNavigate}
-          />
+          activeCase && session ? (
+            <AdminCaseDetailScreen
+              currentCase={activeCase}
+              currentUserId={session.user.id}
+              lawyers={lawyers}
+              onUpdateCaseStatus={handleUpdateCaseStatus}
+              onApproveDocument={handleApproveDocument}
+              onRejectDocument={handleRejectDocument}
+              onAddInternalNote={handleAddInternalNote}
+              onAssignLawyer={handleAssignLawyer}
+              onNavigate={handleNavigate}
+            />
+          ) : (
+            <EmptyCaseState casesLoading={casesLoading} onNavigate={handleNavigate} />
+          )
         )}
 
       </div>
 
-      {/* Footer (shown on Landing & info screens) */}
-      <Footer currentLanguage={currentLanguage} onNavigate={handleNavigate} />
-
-      {/* Cursor & Dev UI/UX Reference Notes Drawer */}
-      <CursorNotesDrawer
-        activeScreen={activeScreen}
-        isOpen={showCursorNotes}
-        onClose={() => setShowCursorNotes(false)}
-        onNavigate={handleNavigate}
-      />
+      {activeScreen !== 'messaging' && (
+        <Footer currentLanguage={currentLanguage} onNavigate={handleNavigate} />
+      )}
 
     </div>
   );

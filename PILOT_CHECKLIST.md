@@ -1,0 +1,36 @@
+# Pilot kapanış checklist
+
+Canlı site: https://polonyadaki-avukatimm-ten.vercel.app
+
+## Tamamlananlar
+- [x] PR #1 merge → `main`
+- [x] Vercel Production deploy (Vite + Config env)
+- [x] `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (Config, not Secret)
+- [x] Landing canlı açılıyor
+- [x] Production giriş (demo buton yok) — müşteri paneli smoke
+- [x] Belgelerim boş state görünüyor
+- [x] Supabase Auth Site URL + Redirect URLs = production domain
+
+## Auth URL (tamam)
+Supabase Dashboard → **Authentication** → **URL Configuration**:
+
+- **Site URL:** `https://polonyadaki-avukatimm-ten.vercel.app`
+- **Redirect URLs:** `https://polonyadaki-avukatimm-ten.vercel.app`
+
+## Smoke (production)
+- [x] Ana sayfa / Legal Navy
+- [x] Giriş: `mehmet@test.com` / `test1234` → Müşteri Paneli
+- [x] Demo giriş butonları production’da yok
+- [x] Belgelerim sekmesi (empty state)
+- [x] Profil formu görünüyor
+- [x] Avukat: `ahmet@test.com` / `test1234` → admin liste + aciliyet uyarıları
+- [~] Şifremi unuttum: UI OK (`Şifrenizi Sıfırlayın` → gönder); `@test.com` seed maili Supabase tarafından `Email address is invalid` ile reddediliyor (gerçek domain ile uçtan uca doğrulanmalı)
+- [x] Mobil ~390: hamburger menü, giriş, müşteri paneli, mesajlar empty state (gerçek iOS Safari ayrı doğrulama)
+
+## Sonraki (Faz C — ayrı sprint)
+- React Router
+- E-posta bildirimleri
+- i18n paneli
+- Deadline otomasyonu
+- CI workflow (`workflow` GitHub scope)
+- Seed hesapları gerçek/geçerli e-posta domain’ine taşı (şifre sıfırlama smoke için)

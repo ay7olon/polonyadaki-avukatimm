@@ -8,6 +8,23 @@ Polonya'da yaşayan Türk vatandaşları için hukuki danışmanlık ve dosya ta
 - **Backend:** [Supabase](https://supabase.com) (Postgres, Auth, Storage, Realtime)
 - **Test:** Vitest
 
+## Canlı site
+
+https://polonyadaki-avukatimm-ten.vercel.app
+
+Pilot kapanış listesi: [PILOT_CHECKLIST.md](PILOT_CHECKLIST.md)
+
+### Demo hesaplar (seed)
+
+Tüm seed kullanıcıların şifresi aynıdır. Production’da demo giriş butonları görünmez; e-posta + şifre ile girin.
+
+| Rol | E-posta | Şifre |
+| --- | --- | --- |
+| Müşteri | `mehmet@test.com` | `test1234` |
+| Avukat / Admin | `ahmet@test.com` | `test1234` |
+
+> Not: `@test.com` adresleri giriş için çalışır; şifre sıfırlama e-postası Supabase tarafından reddedilebilir. Gerçek domain’li hesapla uçtan uca reset testi gerekir.
+
 ## Kurulum
 
 ```bash
@@ -16,7 +33,7 @@ cp .env.example .env   # VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY değerlerin
 npm run dev
 ```
 
-Uygulama `http://localhost:3000` üzerinde açılır.
+Uygulama `http://localhost:3000` üzerinde açılır. Yerelde (DEV) Auth ekranında tek tık demo giriş butonları da vardır.
 
 ### Ortam Değişkenleri
 
@@ -57,9 +74,11 @@ Repo kökünde `vercel.json` ve `netlify.toml` hazır haldedir (SPA fallback + a
 
 ### Pilot checklist (deploy sonrası)
 
-1. Hosting’e `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` ekleyin ve production build alın.
+Canlı örnek: https://polonyadaki-avukatimm-ten.vercel.app — ayrıntılı kapanış listesi: [PILOT_CHECKLIST.md](PILOT_CHECKLIST.md)
+
+1. Hosting’e `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` ekleyin (**Config**, Secret değil) ve production build / redeploy alın.
 2. Supabase Dashboard → **Authentication → URL Configuration**:
-   - **Site URL** = production domain (örn. `https://your-app.vercel.app`)
+   - **Site URL** = `https://polonyadaki-avukatimm-ten.vercel.app`
    - **Redirect URLs** içine aynı origin’i ekleyin (şifre sıfırlama / e-posta doğrulama için şart)
 3. Production build’de demo giriş butonları görünmez (`import.meta.env.DEV`).
 4. Auth smoke: kayıt, giriş, “Şifremi unuttum”, e-posta linkinden yeni şifre.

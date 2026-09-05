@@ -12,6 +12,7 @@
 - [x] Çözünürlük / mobil QA (ilk tur)
 - [x] Faz A — boş UI yüzeyleri (Belgelerim, Profil, mesaj arama)
 - [x] Faz B — pilot paket (DEV demo, şifre sıfırlama, deploy checklist)
+- [x] Pilot canlı — Vercel production + smoke (bkz. PILOT_CHECKLIST.md)
 
 ## Faz A — Boş yüzeyler (2026-09-05)
 - Belgelerim: tüm case belgelerini listeler; signed URL görüntüleme + dosyaya git
@@ -25,13 +26,21 @@
 - Kayıt: `emailRedirectTo` site origin’e ayarlandı
 - Deploy için checklist: README “Pilot checklist” bölümü
 
-Manuel smoke (gerçek cihaz / Safari — henüz yapılmadı):
-- [ ] iPhone Safari: mesaj input + klavye
-- [ ] Şifre sıfırlama e-postası production URL ile
-- [ ] Deploy sonrası Supabase Redirect URLs
+## Pilot canlı (2026-09-06)
+- Canlı URL: https://polonyadaki-avukatimm-ten.vercel.app
+- Env: Config tipi `VITE_SUPABASE_*` + başarılı redeploy
+- Smoke: landing, production giriş (demo yok), müşteri paneli, Belgelerim empty, Profil formu (~390 mobil header)
+- **Auth URL ayarlandı:** Site URL + Redirect = `https://polonyadaki-avukatimm-ten.vercel.app`
+
+Smoke (tamamlanan / kalan):
+- [x] Avukat: `ahmet@test.com` / `test1234` → admin liste
+- [x] Mobil ~390: hamburger, giriş, panel, mesajlar empty state
+- [~] Şifre sıfırlama UI OK; `@test.com` maili Supabase’de invalid
+- [ ] Gerçek iPhone Safari: mesaj input + klavye
 
 Sonraki (Faz C):
 - React Router, e-posta bildirimleri, i18n derinliği, deadline otomasyonu
+- CI workflow (`workflow` GitHub scope)
 
 ## Mobil / çözünürlük QA (2026-09-05)
 Yapılan düzeltmeler:

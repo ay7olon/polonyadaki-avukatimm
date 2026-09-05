@@ -14,16 +14,12 @@ https://polonyadaki-avukatimm-ten.vercel.app
 
 Pilot kapanış listesi: [PILOT_CHECKLIST.md](PILOT_CHECKLIST.md)
 
-### Demo hesaplar (seed)
+## Güvenlik (public repo)
 
-Tüm seed kullanıcıların şifresi aynıdır. Production’da demo giriş butonları görünmez; e-posta + şifre ile girin.
-
-| Rol | E-posta | Şifre |
-| --- | --- | --- |
-| Müşteri | `mehmet@test.com` | `test1234` |
-| Avukat / Admin | `ahmet@test.com` | `test1234` |
-
-> Not: `@test.com` adresleri giriş için çalışır; şifre sıfırlama e-postası Supabase tarafından reddedilebilir. Gerçek domain’li hesapla uçtan uca reset testi gerekir.
+- `.env` gitignore’dadır — gerçek anahtar / şifre **asla** commit edilmez.
+- `SUPABASE_SERVICE_ROLE_KEY` ve `DEMO_PASSWORD` yalnızca lokal / CI secret; `VITE_` öneki kullanmayın.
+- Demo giriş butonları yalnızca `npm run dev` + `.env` içindeki `VITE_DEMO_*` ile görünür; production’da yoktur.
+- Hesap şifrelerini README / issue / PR’da paylaşmayın.
 
 ## Kurulum
 
@@ -33,7 +29,7 @@ cp .env.example .env   # VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY değerlerin
 npm run dev
 ```
 
-Uygulama `http://localhost:3000` üzerinde açılır. Yerelde (DEV) Auth ekranında tek tık demo giriş butonları da vardır.
+Uygulama `http://localhost:3000` üzerinde açılır. İsteğe bağlı: `.env` içine `VITE_DEMO_*` ekleyerek yerel demo giriş butonlarını açabilirsiniz.
 
 ### Ortam Değişkenleri
 
@@ -42,14 +38,14 @@ Uygulama `http://localhost:3000` üzerinde açılır. Yerelde (DEV) Auth ekranı
 | `VITE_SUPABASE_URL` | Supabase proje URL'i |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anonim (public) API anahtarı |
 
-Bu iki değer **gizli değildir** — Row Level Security (RLS) ile korunduğu için istemci tarafı bundle'a gömülmeleri güvenlidir. Servis rol anahtarı (`SUPABASE_SERVICE_ROLE_KEY`) sadece `npm run seed` script'i için gereklidir ve asla istemci koduna girmemelidir.
+Bu iki değer istemci bundle’a girer; erişim RLS ile sınırlanır. Yine de production anahtarlarını public issue/PR’lara yapıştırmayın. Servis rol anahtarı (`SUPABASE_SERVICE_ROLE_KEY`) sadece `npm run seed` için gereklidir ve asla istemci koduna / `VITE_` değişkenine girmemelidir.
 
 ### Veritabanı ve Test Verisi
 
 Şema ve RLS politikaları `supabase/migrations/` altında, Supabase MCP/CLI ile proje üzerine uygulanır. Test verisi oluşturmak için:
 
 ```bash
-SUPABASE_SERVICE_ROLE_KEY=... npm run seed
+DEMO_PASSWORD=... SUPABASE_SERVICE_ROLE_KEY=... npm run seed
 ```
 
 ## Komutlar

@@ -23,11 +23,14 @@ interface AuthScreenProps {
   passwordRecoveryPending?: boolean;
 }
 
-const DEMO_CLIENT_EMAIL = 'mehmet@test.com';
-const DEMO_LAWYER_EMAIL = 'ahmet@test.com';
-const DEMO_PASSWORD = 'test1234';
-
 type AuthMode = 'login' | 'register' | 'forgot' | 'update_password';
+
+/** Local-only demo logins — set in `.env`, never hardcode for public repos. */
+const DEMO_CLIENT_EMAIL = import.meta.env.VITE_DEMO_CLIENT_EMAIL ?? '';
+const DEMO_LAWYER_EMAIL = import.meta.env.VITE_DEMO_LAWYER_EMAIL ?? '';
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD ?? '';
+const SHOW_DEMO_LOGINS =
+  import.meta.env.DEV && Boolean(DEMO_CLIENT_EMAIL && DEMO_LAWYER_EMAIL && DEMO_PASSWORD);
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
   currentLanguage,
@@ -417,7 +420,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             </button>
           )}
 
-          {import.meta.env.DEV && mode === 'login' && (
+          {SHOW_DEMO_LOGINS && mode === 'login' && (
             <div className="pt-4 border-t border-[#d7dee8] space-y-2">
               <p className="text-[10px] font-bold text-[#5b6b7c] uppercase tracking-wider text-center">
                 Hızlı Demo Test Girişleri (sadece geliştirme ortamı):
@@ -433,7 +436,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     <User className="w-3 h-3 text-gold" />
                     <span>Müşteri Demosu</span>
                   </div>
-                  <div className="text-[10px] text-[#5b6b7c]">Mehmet · mehmet@test.com</div>
+                  <div className="text-[10px] text-[#5b6b7c] truncate">{DEMO_CLIENT_EMAIL}</div>
                 </button>
 
                 <button
@@ -446,7 +449,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     <ShieldCheck className="w-3 h-3 text-gold" />
                     <span>Avukat Demosu</span>
                   </div>
-                  <div className="text-[10px] text-[#5b6b7c]">Ahmet · ahmet@test.com</div>
+                  <div className="text-[10px] text-[#5b6b7c] truncate">{DEMO_LAWYER_EMAIL}</div>
                 </button>
               </div>
             </div>

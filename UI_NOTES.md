@@ -33,9 +33,9 @@
 - **Auth URL ayarlandı:** Site URL + Redirect = `https://polonyadaki-avukatimm-ten.vercel.app`
 
 Smoke (tamamlanan / kalan):
-- [x] Avukat: `ahmet@test.com` / `test1234` → admin liste
+- [x] Avukat girişi → admin liste
 - [x] Mobil ~390: hamburger, giriş, panel, mesajlar empty state
-- [~] Şifre sıfırlama UI OK; `@test.com` maili Supabase’de invalid
+- [~] Şifre sıfırlama UI OK; bazı seed domain’leri invalid olabilir
 - [ ] Gerçek iPhone Safari: mesaj input + klavye
 
 Sonraki (Faz C):

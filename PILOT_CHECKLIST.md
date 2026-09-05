@@ -2,6 +2,8 @@
 
 Canlı site: https://polonyadaki-avukatimm-ten.vercel.app
 
+> Hesap e-posta / şifreleri bu dosyada tutulmaz (public repo). Pilot hesaplar lokal not / password manager’da kalsın.
+
 ## Tamamlananlar
 - [x] PR #1 merge → `main`
 - [x] Vercel Production deploy (Vite + Config env)
@@ -19,12 +21,12 @@ Supabase Dashboard → **Authentication** → **URL Configuration**:
 
 ## Smoke (production)
 - [x] Ana sayfa / Legal Navy
-- [x] Giriş: `mehmet@test.com` / `test1234` → Müşteri Paneli
+- [x] Müşteri girişi → Müşteri Paneli
 - [x] Demo giriş butonları production’da yok
 - [x] Belgelerim sekmesi (empty state)
 - [x] Profil formu görünüyor
-- [x] Avukat: `ahmet@test.com` / `test1234` → admin liste + aciliyet uyarıları
-- [~] Şifremi unuttum: UI OK (`Şifrenizi Sıfırlayın` → gönder); `@test.com` seed maili Supabase tarafından `Email address is invalid` ile reddediliyor (gerçek domain ile uçtan uca doğrulanmalı)
+- [x] Avukat girişi → admin liste + aciliyet uyarıları
+- [~] Şifremi unuttum: UI OK; bazı seed domain’leri Supabase e-posta validasyonunda reddedilebilir
 - [x] Mobil ~390: hamburger menü, giriş, müşteri paneli, mesajlar empty state (gerçek iOS Safari ayrı doğrulama)
 
 ## Sonraki (Faz C — ayrı sprint)

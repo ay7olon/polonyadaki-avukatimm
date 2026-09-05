@@ -5,11 +5,12 @@
  * exactly like production).
  *
  * Usage:
- *   SUPABASE_SERVICE_ROLE_KEY=<service_role_key> npm run seed
+ *   DEMO_PASSWORD=<local-only> SUPABASE_SERVICE_ROLE_KEY=<service_role_key> npm run seed
  *
  * Get the service role key from: Supabase Dashboard > Project Settings > API.
- * NEVER commit this key or put it in a VITE_-prefixed env var (those are
- * exposed to the browser bundle). VITE_SUPABASE_URL is read from .env.
+ * NEVER commit service role / DEMO_PASSWORD or put them in a VITE_-prefixed
+ * env var (those are exposed to the browser bundle). VITE_SUPABASE_URL is
+ * read from .env.
  *
  * Safe to re-run: existing auth users (matched by email) are reused instead
  * of re-created, but case data will be duplicated if run more than once
@@ -21,11 +22,12 @@ import { INITIAL_CASES, MOCK_LAWYERS } from '../../src/data/mockData';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD;
 
-if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !DEMO_PASSWORD) {
   console.error(
-    'Missing env vars.\nRun as:\n  SUPABASE_SERVICE_ROLE_KEY=<service_role_key> npm run seed\n' +
-      '(VITE_SUPABASE_URL is read from .env)'
+    'Missing env vars.\nRun as:\n  DEMO_PASSWORD=... SUPABASE_SERVICE_ROLE_KEY=... npm run seed\n' +
+      '(VITE_SUPABASE_URL is read from .env — never commit DEMO_PASSWORD or the service role key)'
   );
   process.exit(1);
 }
@@ -33,8 +35,6 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
-
-const DEMO_PASSWORD = 'Demo12345!';
 
 // NOTE: Supabase Auth validates that the email domain can actually receive
 // mail (MX lookup) even when using the admin API. A fictional company

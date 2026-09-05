@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+/* Legal Navy design tokens — visual layer only */
+@theme {
+  --color-navy: #0b1f3a;
+  --color-navy-2: #143556;
+  --color-navy-soft: #e8eef6;
+  --color-gold: #c2a46b;
+  --color-canvas: #f4f6f9;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-navy);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}

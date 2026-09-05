@@ -1,5 +1,7 @@
 export type Language = 'TR' | 'PL' | 'EN';
 
+export type UserRole = 'client' | 'lawyer' | 'admin';
+
 export type ScreenId = 
   | 'landing'
   | 'auth'
@@ -57,7 +59,7 @@ export interface ChatMessage {
   avatar?: string;
   text: string;
   timestamp: string;
-  attachments?: { name: string; size: string; type: string }[];
+  attachments?: { name: string; size: string; type: string; path?: string }[];
 }
 
 export interface LegalCase {
@@ -73,6 +75,8 @@ export interface LegalCase {
   urgency: UrgencyLevel;
   createdAt: string;
   updatedAt: string;
+  deadlineAt?: string;
+  assignedLawyerId?: string;
   assignedLawyer: string;
   lawyerAvatar: string;
   progressPercent: number;

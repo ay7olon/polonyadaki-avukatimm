@@ -1,5 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Language, ScreenId, LegalCase, CaseStatus, LawyerNote } from './types';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
+import { Language, ScreenId, CaseStatus, LawyerNote } from './types';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { useAuth } from './hooks/useAuth';
@@ -8,8 +17,16 @@ import { useLawyers } from './hooks/useLawyers';
 import { useToast } from './hooks/useToast';
 import { supabase } from './lib/supabaseClient';
 import { formatFileSize, uploadCaseDocumentFile } from './lib/storage';
+import {
+  isAuthPath,
+  isClientPath,
+  isPublicPath,
+  isStaffPath,
+  pathForScreen,
+  paths,
+  screenFromPathname,
+} from './lib/routes';
 
-// Views
 import { LandingScreen } from './views/LandingScreen';
 import { AuthScreen } from './views/AuthScreen';
 import { ClientDashboardScreen } from './views/ClientDashboardScreen';
@@ -18,10 +35,6 @@ import { CaseTimelineScreen } from './views/CaseTimelineScreen';
 import { MessagingScreen } from './views/MessagingScreen';
 import { AdminCaseListScreen } from './views/AdminCaseListScreen';
 import { AdminCaseDetailScreen } from './views/AdminCaseDetailScreen';
-
-const PUBLIC_SCREENS: ScreenId[] = ['landing', 'auth'];
-const CLIENT_SCREENS: ScreenId[] = ['client_dashboard', 'new_application', 'case_timeline', 'messaging'];
-const STAFF_SCREENS: ScreenId[] = ['admin_case_list', 'admin_case_detail'];
 
 function EmptyCaseState({
   casesLoading,
@@ -54,6 +67,143 @@ function EmptyCaseState({
   );
 }
 
+function RequireAuth({
+  session,
+  passwordRecoveryPending,
+}: {
+  session: unknown;
+  passwordRecoveryPending: boolean;
+}) {
+  const location = useLocation();
+  if (passwordRecoveryPending) {
+    return <Navigate to={paths.auth} replace />;
+  }
+  if (!session) {
+    return <Navigate to={paths.auth} replace state={{ returnTo: location.pathname }} />;
+  }
+  return <Outlet />;
+}
+
+function RequireClient({ isStaff }: { isStaff: boolean }) {
+  if (isStaff) return <Navigate to={paths.adminCaseList} replace />;
+  return <Outlet />;
+}
+
+function RequireStaff({ isStaff }: { isStaff: boolean }) {
+  if (!isStaff) return <Navigate to={paths.clientDashboard} replace />;
+  return <Outlet />;
+}
+
+function CaseTimelineRoute({
+  cases,
+  casesLoading,
+  onNavigate,
+  onUploadDocument,
+}: {
+  cases: ReturnType<typeof useCases>['cases'];
+  casesLoading: boolean;
+  onNavigate: (screen: ScreenId, caseId?: string) => void;
+  onUploadDocument: (caseId: string, file: File) => Promise<void>;
+}) {
+  const { caseId } = useParams<{ caseId: string }>();
+  const currentCase = cases.find((c) => c.id === caseId);
+
+  if (!caseId || (!currentCase && !casesLoading)) {
+    return <Navigate to={paths.clientDashboard} replace />;
+  }
+
+  if (!currentCase) {
+    return <EmptyCaseState casesLoading={casesLoading} onNavigate={onNavigate} />;
+  }
+
+  return (
+    <CaseTimelineScreen
+      currentCase={currentCase}
+      onNavigate={onNavigate}
+      onUploadDocument={onUploadDocument}
+    />
+  );
+}
+
+function MessagingRoute({
+  cases,
+  casesLoading,
+  sessionUserId,
+  userRole,
+  onNavigate,
+}: {
+  cases: ReturnType<typeof useCases>['cases'];
+  casesLoading: boolean;
+  sessionUserId: string;
+  userRole: NonNullable<ReturnType<typeof useAuth>['profile']>['role'];
+  onNavigate: (screen: ScreenId, caseId?: string) => void;
+}) {
+  const { caseId } = useParams<{ caseId?: string }>();
+
+  if (cases.length === 0) {
+    return <EmptyCaseState casesLoading={casesLoading} onNavigate={onNavigate} />;
+  }
+
+  return (
+    <MessagingScreen
+      cases={cases}
+      activeCaseId={caseId}
+      currentUserId={sessionUserId}
+      currentUserRole={userRole}
+      onNavigate={onNavigate}
+    />
+  );
+}
+
+function AdminCaseDetailRoute({
+  cases,
+  casesLoading,
+  sessionUserId,
+  lawyers,
+  onUpdateCaseStatus,
+  onApproveDocument,
+  onRejectDocument,
+  onAddInternalNote,
+  onAssignLawyer,
+  onNavigate,
+}: {
+  cases: ReturnType<typeof useCases>['cases'];
+  casesLoading: boolean;
+  sessionUserId: string;
+  lawyers: ReturnType<typeof useLawyers>['lawyers'];
+  onUpdateCaseStatus: (caseId: string, newStatus: CaseStatus) => Promise<void>;
+  onApproveDocument: (caseId: string, docId: string) => Promise<void>;
+  onRejectDocument: (caseId: string, docId: string, reason: string) => Promise<void>;
+  onAddInternalNote: (caseId: string, noteText: string) => Promise<void>;
+  onAssignLawyer: (caseId: string, lawyerId: string) => Promise<void>;
+  onNavigate: (screen: ScreenId, caseId?: string) => void;
+}) {
+  const { caseId } = useParams<{ caseId: string }>();
+  const currentCase = cases.find((c) => c.id === caseId);
+
+  if (!caseId || (!currentCase && !casesLoading)) {
+    return <Navigate to={paths.adminCaseList} replace />;
+  }
+
+  if (!currentCase) {
+    return <EmptyCaseState casesLoading={casesLoading} onNavigate={onNavigate} />;
+  }
+
+  return (
+    <AdminCaseDetailScreen
+      currentCase={currentCase}
+      currentUserId={sessionUserId}
+      lawyers={lawyers}
+      onUpdateCaseStatus={onUpdateCaseStatus}
+      onApproveDocument={onApproveDocument}
+      onRejectDocument={onRejectDocument}
+      onAddInternalNote={onAddInternalNote}
+      onAssignLawyer={onAssignLawyer}
+      onNavigate={onNavigate}
+    />
+  );
+}
+
 export default function App() {
   const {
     session,
@@ -64,48 +214,60 @@ export default function App() {
     passwordRecoveryPending,
   } = useAuth();
   const { showError, showSuccess } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [currentLanguage, setCurrentLanguage] = useState<Language>('TR');
-  const [activeScreen, setActiveScreen] = useState<ScreenId>('landing');
-
-  // Cases are loaded from Supabase (RLS-scoped: own cases for clients, all cases for staff).
   const { cases, setCases, loading: casesLoading, error: casesError, refetch: refetchCases } = useCases(session);
-  const [selectedCaseId, setSelectedCaseId] = useState<string>('');
-
-  const activeCase = cases.find(c => c.id === selectedCaseId) ?? cases[0];
   const isStaff = profile?.role === 'lawyer' || profile?.role === 'admin';
-
-  // Lawyer roster for admin assignment/filtering UI (staff-only; RLS scopes it).
   const { lawyers } = useLawyers(isStaff);
 
-  // Route guard: keep the active screen consistent with the real auth session/role.
+  const activeScreen = useMemo(() => screenFromPathname(location.pathname), [location.pathname]);
+
+  const handleNavigate = useCallback(
+    (screenId: ScreenId, caseId?: string) => {
+      navigate(pathForScreen(screenId, caseId));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    [navigate]
+  );
+
+  // Auth / role URL guards (preserve previous bounce semantics).
   useEffect(() => {
     if (authLoading) return;
 
-    if (passwordRecoveryPending) {
-      setActiveScreen('auth');
+    if (passwordRecoveryPending && !isAuthPath(location.pathname)) {
+      navigate(paths.auth, { replace: true });
       return;
     }
 
-    if (!session && !PUBLIC_SCREENS.includes(activeScreen)) {
-      setActiveScreen('auth');
+    if (!session && !isPublicPath(location.pathname)) {
+      navigate(paths.auth, { replace: true, state: { returnTo: location.pathname } });
       return;
     }
 
     if (session && profile) {
-      if (STAFF_SCREENS.includes(activeScreen) && !isStaff) {
-        setActiveScreen('client_dashboard');
+      if (isStaffPath(location.pathname) && !isStaff) {
+        navigate(paths.clientDashboard, { replace: true });
         return;
       }
-      if (CLIENT_SCREENS.includes(activeScreen) && isStaff) {
-        setActiveScreen('admin_case_list');
+      if (isClientPath(location.pathname) && isStaff) {
+        navigate(paths.adminCaseList, { replace: true });
         return;
       }
-      if (activeScreen === 'auth') {
-        setActiveScreen(isStaff ? 'admin_case_list' : 'client_dashboard');
+      if (isAuthPath(location.pathname) && !passwordRecoveryPending) {
+        navigate(isStaff ? paths.adminCaseList : paths.clientDashboard, { replace: true });
       }
     }
-  }, [session, profile, authLoading, activeScreen, isStaff, passwordRecoveryPending]);
+  }, [
+    session,
+    profile,
+    authLoading,
+    isStaff,
+    passwordRecoveryPending,
+    location.pathname,
+    navigate,
+  ]);
 
   useEffect(() => {
     if (casesError) {
@@ -114,23 +276,13 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [casesError]);
 
-  // State Handlers
-  const handleNavigate = (screenId: ScreenId, caseId?: string) => {
-    setActiveScreen(screenId);
-    if (caseId) {
-      setSelectedCaseId(caseId);
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const handleLogout = async () => {
     await signOut();
-    setActiveScreen('landing');
+    navigate(paths.landing);
   };
 
   const handleCaseSubmitted = async (newCaseId: string) => {
     await refetchCases();
-    setSelectedCaseId(newCaseId);
     handleNavigate('case_timeline', newCaseId);
   };
 
@@ -162,12 +314,12 @@ export default function App() {
       showError(`Dosya durumu güncellenemedi: ${error.message}`);
       return;
     }
-    setCases(prev =>
-      prev.map(c => {
+    setCases((prev) =>
+      prev.map((c) => {
         if (c.id === caseId) {
           const updatedTimeline = [...c.timeline];
           if (newStatus === 'completed') {
-            updatedTimeline.forEach(t => (t.status = 'completed'));
+            updatedTimeline.forEach((t) => (t.status = 'completed'));
           }
           return {
             ...c,
@@ -191,12 +343,12 @@ export default function App() {
       showError(`Belge onaylanamadı: ${error.message}`);
       return;
     }
-    setCases(prev =>
-      prev.map(c => {
+    setCases((prev) =>
+      prev.map((c) => {
         if (c.id === caseId) {
           return {
             ...c,
-            documents: c.documents.map(d =>
+            documents: c.documents.map((d) =>
               d.id === docId ? { ...d, status: 'approved' as const, rejectionReason: undefined } : d
             ),
           };
@@ -223,13 +375,13 @@ export default function App() {
     if (caseError) {
       showError(`Dosya durumu güncellenemedi: ${caseError.message}`);
     }
-    setCases(prev =>
-      prev.map(c => {
+    setCases((prev) =>
+      prev.map((c) => {
         if (c.id === caseId) {
           return {
             ...c,
             status: 'pending_docs',
-            documents: c.documents.map(d =>
+            documents: c.documents.map((d) =>
               d.id === docId ? { ...d, status: 'rejected' as const, rejectionReason: reason } : d
             ),
           };
@@ -261,8 +413,8 @@ export default function App() {
       isPrivate: true,
     };
 
-    setCases(prev =>
-      prev.map(c => (c.id === caseId ? { ...c, internalNotes: [...c.internalNotes, newNote] } : c))
+    setCases((prev) =>
+      prev.map((c) => (c.id === caseId ? { ...c, internalNotes: [...c.internalNotes, newNote] } : c))
     );
   };
 
@@ -277,9 +429,9 @@ export default function App() {
       return;
     }
 
-    const lawyer = lawyers.find(l => l.id === lawyerId);
-    setCases(prev =>
-      prev.map(c =>
+    const lawyer = lawyers.find((l) => l.id === lawyerId);
+    setCases((prev) =>
+      prev.map((c) =>
         c.id === caseId
           ? {
               ...c,
@@ -303,7 +455,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-canvas text-navy font-sans flex flex-col selection:bg-navy selection:text-white">
-      
       <Header
         currentLanguage={currentLanguage}
         onLanguageChange={setCurrentLanguage}
@@ -316,110 +467,152 @@ export default function App() {
       />
 
       <div className="flex-1">
-        
-        {activeScreen === 'landing' && (
-          <LandingScreen
-            currentLanguage={currentLanguage}
-            onNavigate={handleNavigate}
+        <Routes>
+          <Route
+            path={paths.landing}
+            element={
+              <LandingScreen currentLanguage={currentLanguage} onNavigate={handleNavigate} />
+            }
           />
-        )}
 
-        {activeScreen === 'auth' && (
-          <AuthScreen
-            currentLanguage={currentLanguage}
-            onLanguageChange={setCurrentLanguage}
-            onNavigate={handleNavigate}
-            passwordRecoveryPending={passwordRecoveryPending}
+          <Route
+            path={paths.auth}
+            element={
+              <AuthScreen
+                currentLanguage={currentLanguage}
+                onLanguageChange={setCurrentLanguage}
+                onNavigate={handleNavigate}
+                passwordRecoveryPending={passwordRecoveryPending}
+              />
+            }
           />
-        )}
 
-        {activeScreen === 'client_dashboard' && (
-          <ClientDashboardScreen
-            cases={cases}
-            loading={casesLoading}
-            currentUserName={profile?.full_name || 'Müşteri'}
-            currentUserEmail={profile?.email || session?.user.email || ''}
-            currentUserPhone={profile?.phone || ''}
-            currentLanguagePref={profile?.language_pref || currentLanguage}
-            onUpdateProfile={updateProfile}
-            onNavigate={handleNavigate}
-            onSelectCase={(c) => setSelectedCaseId(c.id)}
-          />
-        )}
+          <Route element={<RequireAuth session={session} passwordRecoveryPending={passwordRecoveryPending} />}>
+            <Route element={<RequireClient isStaff={isStaff} />}>
+              <Route
+                path={paths.clientDashboard}
+                element={
+                  <ClientDashboardScreen
+                    cases={cases}
+                    loading={casesLoading}
+                    currentUserName={profile?.full_name || 'Müşteri'}
+                    currentUserEmail={profile?.email || session?.user.email || ''}
+                    currentUserPhone={profile?.phone || ''}
+                    currentLanguagePref={profile?.language_pref || currentLanguage}
+                    onUpdateProfile={updateProfile}
+                    onNavigate={handleNavigate}
+                    onSelectCase={() => undefined}
+                  />
+                }
+              />
+              <Route
+                path={paths.newApplication}
+                element={
+                  session ? (
+                    <NewApplicationWizardScreen
+                      currentUser={{
+                        id: session.user.id,
+                        fullName: profile?.full_name || '',
+                        phone: profile?.phone || '',
+                        email: profile?.email || session.user.email || '',
+                      }}
+                      onSubmitted={handleCaseSubmitted}
+                      onNavigate={handleNavigate}
+                    />
+                  ) : (
+                    <Navigate to={paths.auth} replace />
+                  )
+                }
+              />
+              <Route
+                path="/app/cases/:caseId"
+                element={
+                  <CaseTimelineRoute
+                    cases={cases}
+                    casesLoading={casesLoading}
+                    onNavigate={handleNavigate}
+                    onUploadDocument={handleUploadDocument}
+                  />
+                }
+              />
+              <Route
+                path="/app/messages"
+                element={
+                  session && profile ? (
+                    <MessagingRoute
+                      cases={cases}
+                      casesLoading={casesLoading}
+                      sessionUserId={session.user.id}
+                      userRole={profile.role}
+                      onNavigate={handleNavigate}
+                    />
+                  ) : (
+                    <Navigate to={paths.auth} replace />
+                  )
+                }
+              />
+              <Route
+                path="/app/messages/:caseId"
+                element={
+                  session && profile ? (
+                    <MessagingRoute
+                      cases={cases}
+                      casesLoading={casesLoading}
+                      sessionUserId={session.user.id}
+                      userRole={profile.role}
+                      onNavigate={handleNavigate}
+                    />
+                  ) : (
+                    <Navigate to={paths.auth} replace />
+                  )
+                }
+              />
+            </Route>
 
-        {activeScreen === 'new_application' && session && (
-          <NewApplicationWizardScreen
-            currentUser={{
-              id: session.user.id,
-              fullName: profile?.full_name || '',
-              phone: profile?.phone || '',
-              email: profile?.email || session.user.email || '',
-            }}
-            onSubmitted={handleCaseSubmitted}
-            onNavigate={handleNavigate}
-          />
-        )}
+            <Route element={<RequireStaff isStaff={isStaff} />}>
+              <Route
+                path={paths.adminCaseList}
+                element={
+                  <AdminCaseListScreen
+                    cases={cases}
+                    lawyers={lawyers}
+                    loading={casesLoading}
+                    onSelectCase={() => undefined}
+                    onNavigate={handleNavigate}
+                  />
+                }
+              />
+              <Route
+                path="/admin/cases/:caseId"
+                element={
+                  session ? (
+                    <AdminCaseDetailRoute
+                      cases={cases}
+                      casesLoading={casesLoading}
+                      sessionUserId={session.user.id}
+                      lawyers={lawyers}
+                      onUpdateCaseStatus={handleUpdateCaseStatus}
+                      onApproveDocument={handleApproveDocument}
+                      onRejectDocument={handleRejectDocument}
+                      onAddInternalNote={handleAddInternalNote}
+                      onAssignLawyer={handleAssignLawyer}
+                      onNavigate={handleNavigate}
+                    />
+                  ) : (
+                    <Navigate to={paths.auth} replace />
+                  )
+                }
+              />
+            </Route>
+          </Route>
 
-        {activeScreen === 'case_timeline' && (
-          activeCase ? (
-            <CaseTimelineScreen
-              currentCase={activeCase}
-              onNavigate={handleNavigate}
-              onUploadDocument={handleUploadDocument}
-            />
-          ) : (
-            <EmptyCaseState casesLoading={casesLoading} onNavigate={handleNavigate} />
-          )
-        )}
-
-        {activeScreen === 'messaging' && session && profile && (
-          cases.length > 0 ? (
-            <MessagingScreen
-              cases={cases}
-              activeCaseId={selectedCaseId}
-              currentUserId={session.user.id}
-              currentUserRole={profile.role}
-              onNavigate={handleNavigate}
-            />
-          ) : (
-            <EmptyCaseState casesLoading={casesLoading} onNavigate={handleNavigate} />
-          )
-        )}
-
-        {activeScreen === 'admin_case_list' && (
-          <AdminCaseListScreen
-            cases={cases}
-            lawyers={lawyers}
-            loading={casesLoading}
-            onSelectCase={(c) => setSelectedCaseId(c.id)}
-            onNavigate={handleNavigate}
-          />
-        )}
-
-        {activeScreen === 'admin_case_detail' && (
-          activeCase && session ? (
-            <AdminCaseDetailScreen
-              currentCase={activeCase}
-              currentUserId={session.user.id}
-              lawyers={lawyers}
-              onUpdateCaseStatus={handleUpdateCaseStatus}
-              onApproveDocument={handleApproveDocument}
-              onRejectDocument={handleRejectDocument}
-              onAddInternalNote={handleAddInternalNote}
-              onAssignLawyer={handleAssignLawyer}
-              onNavigate={handleNavigate}
-            />
-          ) : (
-            <EmptyCaseState casesLoading={casesLoading} onNavigate={handleNavigate} />
-          )
-        )}
-
+          <Route path="*" element={<Navigate to={paths.landing} replace />} />
+        </Routes>
       </div>
 
       {activeScreen !== 'messaging' && (
         <Footer currentLanguage={currentLanguage} onNavigate={handleNavigate} />
       )}
-
     </div>
   );
 }

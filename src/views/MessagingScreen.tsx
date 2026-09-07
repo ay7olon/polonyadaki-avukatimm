@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Send, 
   Paperclip, 
@@ -24,7 +24,7 @@ interface MessagingScreenProps {
   activeCaseId?: string;
   currentUserId: string;
   currentUserRole: UserRole;
-  onNavigate: (screen: ScreenId) => void;
+  onNavigate: (screen: ScreenId, caseId?: string) => void;
 }
 
 export const MessagingScreen: React.FC<MessagingScreenProps> = ({
@@ -41,6 +41,13 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
   const [mobileShowChat, setMobileShowChat] = useState(Boolean(activeCaseId));
   const [searchTerm, setSearchTerm] = useState('');
   const { showError } = useToast();
+
+  useEffect(() => {
+    if (activeCaseId) {
+      setSelectedCaseId(activeCaseId);
+      setMobileShowChat(true);
+    }
+  }, [activeCaseId]);
 
   const filteredCases = cases.filter(c => {
     const q = searchTerm.trim().toLowerCase();
@@ -69,6 +76,7 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
   const handleSelectCase = (caseId: string) => {
     setSelectedCaseId(caseId);
     setMobileShowChat(true);
+    onNavigate('messaging', caseId);
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -228,7 +236,7 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
           </div>
 
           <button
-            onClick={() => onNavigate('case_timeline')}
+            onClick={() => onNavigate('case_timeline', selectedCase.id)}
             className="px-2.5 sm:px-3 py-1.5 rounded-md bg-navy-soft hover:bg-[#d7dee8] text-navy text-xs font-bold flex items-center space-x-1 transition border border-[#d7dee8] shrink-0"
           >
             <Info className="w-3.5 h-3.5 text-[#5b6b7c]" />

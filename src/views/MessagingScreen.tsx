@@ -172,7 +172,6 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
             </div>
           )}
           {filteredCases.map(c => {
-            const lastMsg = c.messages[c.messages.length - 1];
             const isSelected = c.id === selectedCaseId;
 
             return (
@@ -195,7 +194,7 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
                   </div>
                   <p className="text-[11px] text-gold font-bold truncate">{c.caseType}</p>
                   <p className="text-[11px] text-[#5b6b7c] truncate">
-                    {lastMsg ? lastMsg.text : 'Yeni konuşma başlatıldı.'}
+                    {c.clientName || 'Dosya mesajlaşması'}
                   </p>
                 </div>
               </div>

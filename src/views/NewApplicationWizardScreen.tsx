@@ -178,13 +178,17 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
     }
 
     // Initial timeline steps are created automatically by a DB trigger.
+    const uploadFailures: string[] = [];
     for (let i = 0; i < uploadedFiles.length; i++) {
       const f = uploadedFiles[i];
       setSubmitProgress(`Evrak yükleniyor (${i + 1}/${uploadedFiles.length}): ${f.name}`);
 
       const { path, error: uploadError } = await uploadCaseDocumentFile(caseId, f.file);
-      if (uploadError) {
-        showError(`Dosya yüklenemedi (${f.name}): ${uploadError}`);
+      if (uploadError || !path) {
+        const reason = uploadError ?? 'Dosya yolu alınamadı';
+        uploadFailures.push(f.name);
+        showError(`Dosya yüklenemedi (${f.name}): ${reason}`);
+        continue;
       }
 
       const { error: docsError } = await supabase.from('case_documents').insert({
@@ -196,12 +200,25 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
         storage_path: path,
       });
       if (docsError) {
-        showError(`Belge kaydı başarısız: ${docsError.message}`);
+        uploadFailures.push(f.name);
+        showError(`Belge kaydı başarısız (${f.name}): ${docsError.message}`);
       }
     }
 
     setSubmitProgress(null);
     setSubmitting(false);
+
+    if (uploadFailures.length > 0) {
+      const message =
+        uploadedFiles.length > 0 && uploadFailures.length === uploadedFiles.length
+          ? `Başvuru oluşturuldu ancak evraklar yüklenemedi: ${uploadFailures.join(', ')}. Dosya detayından tekrar yükleyebilirsiniz.`
+          : `Başvuru oluşturuldu; bazı evraklar yüklenemedi: ${uploadFailures.join(', ')}. Eksikleri dosya detayından tamamlayabilirsiniz.`;
+      setSubmitError(message);
+      showError(message);
+      onSubmitted(caseId);
+      return;
+    }
+
     showSuccess('Başvurunuz alındı! Avukatlarımız en kısa sürede dosyanızı inceleyecek.');
     onSubmitted(caseId);
   };

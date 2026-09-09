@@ -20,7 +20,6 @@ function baseRow(overrides: Partial<DbLegalCase> = {}): DbLegalCase {
     case_documents: null,
     case_timeline_steps: null,
     case_internal_notes: null,
-    case_messages: null,
     ...overrides,
   };
 }
@@ -35,6 +34,8 @@ describe('mapDbCaseToLegalCase', () => {
     expect(result.assignedLawyerId).toBeUndefined();
     expect(result.documents).toEqual([]);
     expect(result.timeline).toEqual([]);
+    expect(result.messages).toEqual([]);
+    expect(result.progressPercent).toBe(0);
     expect(result.createdAt).toBe('2026-08-01');
   });
 
@@ -51,6 +52,22 @@ describe('mapDbCaseToLegalCase', () => {
     expect(result.timeline.map(t => t.id)).toEqual(['t1', 't2']);
   });
 
+  it('computes progressPercent from completed timeline ratio', () => {
+    const result = mapDbCaseToLegalCase(
+      baseRow({
+        progress_percent: 99,
+        case_timeline_steps: [
+          { id: 't1', title: 'A', description: '', step_date: null, status: 'completed', actor: null, sort_order: 1 },
+          { id: 't2', title: 'B', description: '', step_date: null, status: 'completed', actor: null, sort_order: 2 },
+          { id: 't3', title: 'C', description: '', step_date: null, status: 'current', actor: null, sort_order: 3 },
+          { id: 't4', title: 'D', description: '', step_date: null, status: 'upcoming', actor: null, sort_order: 4 },
+        ],
+      })
+    );
+
+    expect(result.progressPercent).toBe(50);
+  });
+
   it('carries through assigned lawyer info', () => {
     const result = mapDbCaseToLegalCase(
       baseRow({
@@ -62,26 +79,5 @@ describe('mapDbCaseToLegalCase', () => {
     expect(result.assignedLawyerId).toBe('lawyer-1');
     expect(result.assignedLawyer).toBe('Av. Piotr Kowalski');
     expect(result.lawyerAvatar).toBe('https://example.com/a.png');
-  });
-
-  it('falls back to the assigned lawyer for lawyer-authored messages without a joined sender', () => {
-    const result = mapDbCaseToLegalCase(
-      baseRow({
-        assigned_lawyer: { full_name: 'Av. Piotr Kowalski', avatar_url: null },
-        case_messages: [
-          {
-            id: 'm1',
-            sender_id: null,
-            sender_role: 'lawyer',
-            body: 'Merhaba',
-            attachments: null,
-            created_at: '2026-08-01T12:00:00.000Z',
-            sender: null,
-          },
-        ],
-      })
-    );
-
-    expect(result.messages[0].senderName).toBe('Av. Piotr Kowalski');
   });
 });

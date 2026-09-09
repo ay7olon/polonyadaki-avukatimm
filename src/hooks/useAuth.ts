@@ -15,7 +15,7 @@ export interface Profile {
   created_at: string;
 }
 
-interface SignUpParams {
+export interface SignUpParams {
   email: string;
   password: string;
   fullName: string;

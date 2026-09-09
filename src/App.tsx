@@ -8,7 +8,7 @@ import {
   useNavigate,
   useParams,
 } from 'react-router-dom';
-import { Language, ScreenId, CaseStatus, LawyerNote } from './types';
+import { Language, ScreenId, CaseStatus } from './types';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { useAuth } from './hooks/useAuth';
@@ -209,8 +209,12 @@ export default function App() {
     session,
     profile,
     loading: authLoading,
+    signIn,
+    signUp,
     signOut,
     updateProfile,
+    resetPassword,
+    updatePassword,
     passwordRecoveryPending,
   } = useAuth();
   const { showError, showSuccess } = useToast();
@@ -218,7 +222,7 @@ export default function App() {
   const location = useLocation();
 
   const [currentLanguage, setCurrentLanguage] = useState<Language>('TR');
-  const { cases, setCases, loading: casesLoading, error: casesError, refetch: refetchCases } = useCases(session);
+  const { cases, loading: casesLoading, error: casesError, refetch: refetchCases } = useCases(session);
   const isStaff = profile?.role === 'lawyer' || profile?.role === 'admin';
   const { lawyers } = useLawyers(isStaff);
 
@@ -314,24 +318,8 @@ export default function App() {
       showError(`Dosya durumu güncellenemedi: ${error.message}`);
       return;
     }
-    setCases((prev) =>
-      prev.map((c) => {
-        if (c.id === caseId) {
-          const updatedTimeline = [...c.timeline];
-          if (newStatus === 'completed') {
-            updatedTimeline.forEach((t) => (t.status = 'completed'));
-          }
-          return {
-            ...c,
-            status: newStatus,
-            updatedAt: new Date().toISOString().split('T')[0],
-            timeline: updatedTimeline,
-          };
-        }
-        return c;
-      })
-    );
     showSuccess('Dosya durumu güncellendi.');
+    await refetchCases();
   };
 
   const handleApproveDocument = async (caseId: string, docId: string) => {
@@ -343,20 +331,8 @@ export default function App() {
       showError(`Belge onaylanamadı: ${error.message}`);
       return;
     }
-    setCases((prev) =>
-      prev.map((c) => {
-        if (c.id === caseId) {
-          return {
-            ...c,
-            documents: c.documents.map((d) =>
-              d.id === docId ? { ...d, status: 'approved' as const, rejectionReason: undefined } : d
-            ),
-          };
-        }
-        return c;
-      })
-    );
     showSuccess('Belge onaylandı.');
+    await refetchCases();
   };
 
   const handleRejectDocument = async (caseId: string, docId: string, reason: string) => {
@@ -375,47 +351,22 @@ export default function App() {
     if (caseError) {
       showError(`Dosya durumu güncellenemedi: ${caseError.message}`);
     }
-    setCases((prev) =>
-      prev.map((c) => {
-        if (c.id === caseId) {
-          return {
-            ...c,
-            status: 'pending_docs',
-            documents: c.documents.map((d) =>
-              d.id === docId ? { ...d, status: 'rejected' as const, rejectionReason: reason } : d
-            ),
-          };
-        }
-        return c;
-      })
-    );
     showSuccess('Belge reddedildi, müşteriye bildirildi.');
+    await refetchCases();
   };
 
   const handleAddInternalNote = async (caseId: string, noteText: string) => {
     if (!session) return;
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('case_internal_notes')
-      .insert({ case_id: caseId, author_id: session.user.id, content: noteText, is_private: true })
-      .select('id, content, created_at')
-      .single();
+      .insert({ case_id: caseId, author_id: session.user.id, content: noteText, is_private: true });
 
-    if (error || !data) {
-      showError(`İç not eklenemedi: ${error?.message ?? 'Bilinmeyen hata'}`);
+    if (error) {
+      showError(`İç not eklenemedi: ${error.message}`);
       return;
     }
 
-    const newNote: LawyerNote = {
-      id: data.id,
-      author: profile?.full_name || 'Avukat',
-      date: new Date(data.created_at).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' }),
-      content: data.content,
-      isPrivate: true,
-    };
-
-    setCases((prev) =>
-      prev.map((c) => (c.id === caseId ? { ...c, internalNotes: [...c.internalNotes, newNote] } : c))
-    );
+    await refetchCases();
   };
 
   const handleAssignLawyer = async (caseId: string, lawyerId: string) => {
@@ -430,19 +381,8 @@ export default function App() {
     }
 
     const lawyer = lawyers.find((l) => l.id === lawyerId);
-    setCases((prev) =>
-      prev.map((c) =>
-        c.id === caseId
-          ? {
-              ...c,
-              assignedLawyerId: lawyerId,
-              assignedLawyer: lawyer?.fullName ?? c.assignedLawyer,
-              lawyerAvatar: lawyer?.avatarUrl ?? c.lawyerAvatar,
-            }
-          : c
-      )
-    );
     showSuccess(`Dosya ${lawyer?.fullName ?? 'seçilen avukata'} atandı.`);
+    await refetchCases();
   };
 
   if (authLoading) {
@@ -483,6 +423,10 @@ export default function App() {
                 onLanguageChange={setCurrentLanguage}
                 onNavigate={handleNavigate}
                 passwordRecoveryPending={passwordRecoveryPending}
+                signIn={signIn}
+                signUp={signUp}
+                resetPassword={resetPassword}
+                updatePassword={updatePassword}
               />
             }
           />

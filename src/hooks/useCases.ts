@@ -12,8 +12,7 @@ const CASE_SELECT = `
   assigned_lawyer:profiles!legal_cases_assigned_lawyer_id_fkey(full_name, avatar_url),
   case_documents(*),
   case_timeline_steps(*),
-  case_internal_notes(*, author:profiles(full_name)),
-  case_messages(*, sender:profiles(full_name))
+  case_internal_notes(*, author:profiles(full_name))
 `;
 
 interface UseCasesResult {
@@ -26,11 +25,7 @@ interface UseCasesResult {
 
 /**
  * Loads all legal cases visible to the current session (RLS-scoped) with
- * their documents/timeline/notes/messages nested in a single query.
- *
- * NOTE: mutation handlers elsewhere (status updates, notes, messages) still
- * operate on the local `cases` state via `setCases` until Faz 4/5/6 wire up
- * their own persistence — this hook only owns the initial read + refetch.
+ * documents/timeline/notes nested. Message threads load via useCaseMessages.
  */
 export function useCases(session: Session | null): UseCasesResult {
   const [cases, setCases] = useState<LegalCase[]>([]);
@@ -49,8 +44,7 @@ export function useCases(session: Session | null): UseCasesResult {
       .from('legal_cases')
       .select(CASE_SELECT)
       .order('created_at', { ascending: false })
-      .order('sort_order', { foreignTable: 'case_timeline_steps', ascending: true })
-      .order('created_at', { foreignTable: 'case_messages', ascending: true });
+      .order('sort_order', { foreignTable: 'case_timeline_steps', ascending: true });
 
     if (fetchError) {
       console.error('Dosyalar yüklenemedi:', fetchError.message);

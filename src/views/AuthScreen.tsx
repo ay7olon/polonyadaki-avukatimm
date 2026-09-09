@@ -12,7 +12,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Language, ScreenId } from '../types';
-import { useAuth } from '../hooks/useAuth';
+import type { SignUpParams } from '../hooks/useAuth';
 import { isValidEmail, isValidFullName, isValidPhone } from '../lib/validation';
 import { BackLink } from '../components/BackLink';
 
@@ -21,6 +21,10 @@ interface AuthScreenProps {
   onLanguageChange?: (lang: Language) => void;
   onNavigate: (screen: ScreenId) => void;
   passwordRecoveryPending?: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (params: SignUpParams) => Promise<{ error: string | null }>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (password: string) => Promise<{ error: string | null }>;
 }
 
 type AuthMode = 'login' | 'register' | 'forgot' | 'update_password';
@@ -36,9 +40,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   currentLanguage: _currentLanguage,
   onNavigate,
   passwordRecoveryPending = false,
+  signIn,
+  signUp,
+  resetPassword,
+  updatePassword,
 }) => {
-  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
-
   const [mode, setMode] = useState<AuthMode>(passwordRecoveryPending ? 'update_password' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

@@ -46,7 +46,9 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
   const [step, setStep] = useState<number>(1);
 
   // Form State
-  const [selectedCategory, setSelectedCategory] = useState<'oturtma' | 'sirket' | 'aile' | 'calisma' | 'vatandasilik'>('oturtma');
+  const [selectedCategory, setSelectedCategory] = useState<
+    'oturtma' | 'sirket' | 'aile' | 'calisma' | 'vatandasilik' | 'danismanlik'
+  >('oturtma');
   const [caseTypeTitle, setCaseTypeTitle] = useState('Geçici Oturma İzni (Karta Pobytu Czasowego)');
   const [city, setCity] = useState('Varşova (Mazowieckie)');
   const [fullName, setFullName] = useState(currentUser.fullName);
@@ -93,6 +95,12 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
       title: 'Polonya Vatandaşlığı',
       subtitle: 'Uznanie / Cumhurbaşkanı',
       icon: <Award className="w-6 h-6 text-gold" />,
+    },
+    {
+      id: 'danismanlik',
+      title: 'Hukuki Danışmanlık & Sözleşme',
+      subtitle: 'Kira, iş hukuku, vekaletname',
+      icon: <Scale className="w-6 h-6 text-navy" />,
     },
   ];
 

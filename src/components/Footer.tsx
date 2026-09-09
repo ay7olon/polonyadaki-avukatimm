@@ -111,11 +111,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="font-medium">
             © 2026 Polonyadaki Avukatım - Kancelaria Prawna. Tüm hakları saklıdır.
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-medium">
-            <a href="#" className="hover:text-gold transition">Gizlilik Politikası (RODO)</a>
-            <a href="#" className="hover:text-gold transition">Kullanım Şartları</a>
-            <a href="#" className="hover:text-gold transition">Çerez Tercihleri</a>
-          </div>
         </div>
       </div>
     </footer>

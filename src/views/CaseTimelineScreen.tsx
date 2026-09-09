@@ -163,7 +163,6 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
               <div>
                 <h5 className="font-bold text-sm text-navy">{currentCase.assignedLawyer}</h5>
                 <p className="text-xs text-[#5b6b7c]">Varşova Barosu Kayıtlı</p>
-                <div className="text-[10px] text-emerald-600 font-bold mt-0.5">● Çevrimiçi</div>
               </div>
             </div>
             <button

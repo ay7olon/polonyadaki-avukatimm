@@ -282,13 +282,10 @@ export const ClientDashboardScreen: React.FC<ClientDashboardScreenProps> = ({
 
           <button
             onClick={() => onNavigate('messaging')}
-            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[#5b6b7c] hover:bg-navy-soft font-semibold transition"
+            className="w-full flex items-center space-x-2.5 px-3.5 py-2.5 rounded-lg text-[#5b6b7c] hover:bg-navy-soft font-semibold transition"
           >
-            <div className="flex items-center space-x-2.5">
-              <MessageSquare className="w-4 h-4 text-navy" />
-              <span>Mesajlar</span>
-            </div>
-            <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+            <MessageSquare className="w-4 h-4 text-navy" />
+            <span>Mesajlar</span>
           </button>
 
           <button

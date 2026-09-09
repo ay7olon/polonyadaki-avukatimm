@@ -39,14 +39,33 @@ import { AdminCaseDetailScreen } from './views/AdminCaseDetailScreen';
 function EmptyCaseState({
   casesLoading,
   onNavigate,
+  audience = 'client',
 }: {
   casesLoading: boolean;
   onNavigate: (screen: ScreenId) => void;
+  audience?: 'client' | 'staff';
 }) {
   if (casesLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[#d7dee8] border-t-navy rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (audience === 'staff') {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4 space-y-4">
+        <h2 className="font-display text-xl font-semibold text-navy">Görüntülenecek dosya yok</h2>
+        <p className="text-sm text-[#5b6b7c] max-w-sm">
+          Henüz atanmış veya listelenecek bir müvekkil dosyası bulunmuyor. Yeni başvurular geldiğinde burada görünecek.
+        </p>
+        <button
+          onClick={() => onNavigate('admin_case_list')}
+          className="px-5 py-2.5 rounded-md bg-navy hover:bg-navy-2 text-white font-bold text-sm shadow-sm transition"
+        >
+          Dosya listesine dön
+        </button>
       </div>
     );
   }
@@ -186,7 +205,7 @@ function AdminCaseDetailRoute({
   }
 
   if (!currentCase) {
-    return <EmptyCaseState casesLoading={casesLoading} onNavigate={onNavigate} />;
+    return <EmptyCaseState casesLoading={casesLoading} onNavigate={onNavigate} audience="staff" />;
   }
 
   return (

@@ -393,9 +393,8 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
             <div className="flex items-center justify-between border-b border-[#d7dee8] pb-3">
               <div className="flex items-center space-x-2 text-navy">
                 <MessageSquare className="w-4 h-4 text-gold" />
-                <h4 className="font-bold text-navy text-xs">Müşteriyle Canlı Yazışma</h4>
+                <h4 className="font-bold text-navy text-xs">Müşteriyle Yazışma</h4>
               </div>
-              <span className="text-[10px] text-emerald-600 font-bold">● Müşteri Aktif</span>
             </div>
 
             {/* Messages Thread */}

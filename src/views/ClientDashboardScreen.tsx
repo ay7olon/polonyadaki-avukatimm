@@ -16,6 +16,7 @@ import {
   Loader2,
   XCircle,
 } from 'lucide-react';
+import { BackLink } from '../components/BackLink';
 import { Language, LegalCase, ScreenId } from '../types';
 import { useNowTick } from '../hooks/useNowTick';
 import { getDeadlineInfo } from '../lib/deadline';
@@ -251,6 +252,7 @@ export const ClientDashboardScreen: React.FC<ClientDashboardScreenProps> = ({
   return (
     <div className="min-h-screen bg-canvas text-navy flex flex-col md:flex-row font-sans">
       <aside className="w-full md:w-64 bg-white border-r border-[#d7dee8] shrink-0 p-4 space-y-6 shadow-sm">
+        <BackLink fallbackTo="/" label="Ana sayfaya dön" />
         <div className="p-3.5 rounded-lg bg-navy-soft border border-[#d7dee8] flex items-center space-x-3">
           <div className="w-10 h-10 rounded-full bg-navy text-white font-extrabold flex items-center justify-center text-sm shadow">
             {initials}

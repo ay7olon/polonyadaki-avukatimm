@@ -13,6 +13,7 @@ import {
   Loader2,
   MessageSquare
 } from 'lucide-react';
+import { BackLink } from '../components/BackLink';
 import { LegalCase, ScreenId, UserRole } from '../types';
 import { useCaseMessages } from '../hooks/useCaseMessages';
 import { formatFileSize, uploadCaseDocumentFile } from '../lib/storage';
@@ -131,6 +132,7 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
       <div className={`w-full md:w-80 bg-white border-r border-[#d7dee8] flex-col shrink-0 ${mobileShowChat ? 'hidden md:flex' : 'flex'} h-full`}>
         
         <div className="p-4 border-b border-[#d7dee8] space-y-3">
+          <BackLink fallbackTo="/app" label="Panele dön" />
           <div className="flex items-center justify-between">
             <h3 className="font-display font-semibold text-base text-navy">Avukat Mesajları</h3>
             <span className="text-[11px] px-2 py-0.5 rounded bg-navy-soft text-navy font-bold border border-[#d7dee8]">

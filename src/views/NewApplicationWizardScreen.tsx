@@ -18,6 +18,7 @@ import {
   Check,
   Loader2
 } from 'lucide-react';
+import { BackLink } from '../components/BackLink';
 import { UrgencyLevel, ScreenId, CaseStatus } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { formatFileSize, uploadCaseDocumentFile } from '../lib/storage';
@@ -208,6 +209,7 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
   return (
     <div className="min-h-screen bg-canvas text-navy py-10 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-4xl mx-auto space-y-8">
+        <BackLink fallbackTo="/app" label="Müşteri paneline dön" />
         
         {/* Header */}
         <div className="text-center space-y-2">

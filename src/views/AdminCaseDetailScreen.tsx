@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, 
   CheckCircle2, 
   XCircle, 
   Clock, 
@@ -19,6 +18,7 @@ import {
   Eye,
   Loader2
 } from 'lucide-react';
+import { BackLink } from '../components/BackLink';
 import { LegalCase, CaseStatus, CaseDocument, ScreenId } from '../types';
 import { getSignedDocumentUrl } from '../lib/storage';
 import { useCaseMessages } from '../hooks/useCaseMessages';
@@ -132,13 +132,7 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
       {/* Top Header & Quick Navigation */}
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[#d7dee8] pb-6">
         <div className="space-y-1">
-          <button
-            onClick={() => onNavigate('admin_case_list')}
-            className="text-xs text-[#5b6b7c] hover:text-navy flex items-center space-x-1 mb-2 font-bold transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Admin Dosya Cetveline Dön</span>
-          </button>
+          <BackLink fallbackTo="/admin/cases" label="Admin dosya listesine dön" className="mb-2" />
           
           <div className="flex items-center space-x-3 flex-wrap">
             <h1 className="text-xl sm:text-2xl font-extrabold font-display text-navy">Avukat İnceleme Paneli</h1>

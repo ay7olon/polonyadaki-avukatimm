@@ -7,7 +7,6 @@ import {
   Download, 
   Upload, 
   MessageSquare, 
-  ArrowLeft, 
   UserCheck, 
   Building,
   ShieldCheck,
@@ -15,6 +14,7 @@ import {
   Loader2,
   Eye
 } from 'lucide-react';
+import { BackLink } from '../components/BackLink';
 import { LegalCase, ScreenId } from '../types';
 import { getSignedDocumentUrl } from '../lib/storage';
 import { useNowTick } from '../hooks/useNowTick';
@@ -61,13 +61,7 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
       {/* Top Header & Back Button */}
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#d7dee8] pb-6">
         <div className="space-y-1">
-          <button
-            onClick={() => onNavigate('client_dashboard')}
-            className="text-xs text-[#5b6b7c] hover:text-navy flex items-center space-x-1 mb-2 font-bold transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Müşteri Paneline Dön</span>
-          </button>
+          <BackLink fallbackTo="/app" label="Müşteri paneline dön" className="mb-2" />
           <div className="flex items-center space-x-3">
             <h1 className="font-display text-2xl font-semibold text-navy">Süreç Takip Kartı</h1>
             <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-white border border-[#d7dee8] text-gold shadow-sm">

@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
   Flame
 } from 'lucide-react';
+import { BackLink } from '../components/BackLink';
 import { LegalCase, UrgencyLevel, CaseStatus, ScreenId } from '../types';
 import { LawyerOption } from '../hooks/useLawyers';
 import { useNowTick } from '../hooks/useNowTick';
@@ -81,6 +82,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
       {/* Top Admin Header Bar */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[#d7dee8] pb-6">
         <div>
+          <BackLink fallbackTo="/" label="Ana sayfaya dön" className="mb-2" />
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded bg-navy text-white font-extrabold text-[11px] uppercase tracking-wider">
               Avukat & Paralegal Paneli

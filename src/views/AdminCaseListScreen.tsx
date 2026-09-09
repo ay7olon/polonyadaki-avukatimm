@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  ShieldCheck, 
-  Search, 
-  Filter, 
-  AlertCircle, 
-  CheckCircle2, 
-  ChevronRight, 
-  UserPlus, 
-  FileText, 
-  ArrowUpDown,
+import {
+  Search,
+  AlertCircle,
+  ChevronRight,
   SlidersHorizontal,
   Flame
-} from 'lucide-react';
+} from 'lucide-react';;
 import { BackLink } from '../components/BackLink';
 import { LegalCase, UrgencyLevel, CaseStatus, ScreenId } from '../types';
 import { LawyerOption } from '../hooks/useLawyers';
@@ -68,7 +62,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
   return (
     <div className="min-h-screen bg-canvas text-navy py-8 px-4 sm:px-6 lg:px-8 space-y-6 font-sans">
       
-      {/* Top Admin Header Bar */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[#d7dee8] pb-6">
         <div>
           <BackLink fallbackTo="/" label="Ana sayfaya dön" className="mb-2" />
@@ -81,7 +74,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
           <h1 className="text-3xl font-extrabold font-display text-navy mt-1">Admin Dosya Yönetim Tablosu</h1>
         </div>
 
-        {/* Urgent Stats Alert */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="px-4 py-2 rounded-xl bg-red-50 border border-red-200 flex items-center space-x-2 text-xs text-red-900 shadow-sm">
             <Flame className="w-4 h-4 text-red-600 animate-bounce" />
@@ -90,7 +82,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
         </div>
       </div>
 
-      {/* FILTER BAR SECTION */}
       <div className="bg-white border border-[#d7dee8] rounded-2xl p-4 shadow-sm space-y-4">
         <div className="flex items-center space-x-2 text-xs font-bold text-[#5b6b7c] uppercase tracking-wider">
           <SlidersHorizontal className="w-4 h-4 text-navy" />
@@ -99,7 +90,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs font-medium">
           
-          {/* Search Input */}
           <div className="relative">
             <Search className="w-4 h-4 text-[#5b6b7c] absolute left-3 top-3" />
             <input
@@ -111,7 +101,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
             />
           </div>
 
-          {/* Urgency Filter */}
           <select
             value={selectedUrgency}
             onChange={e => setSelectedUrgency(e.target.value)}
@@ -123,7 +112,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
             <option value="normal">⚪ Normal Süreç</option>
           </select>
 
-          {/* Status Filter */}
           <select
             value={selectedStatus}
             onChange={e => setSelectedStatus(e.target.value)}
@@ -136,7 +124,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
             <option value="completed">Sonuçlandı</option>
           </select>
 
-          {/* Lawyer Filter */}
           <select
             value={selectedLawyer}
             onChange={e => setSelectedLawyer(e.target.value)}
@@ -148,7 +135,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
             ))}
           </select>
 
-          {/* Reset Filters Button */}
           <button
             onClick={() => {
               setSearchTerm('');
@@ -164,7 +150,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
         </div>
       </div>
 
-      {/* DATA TABLE */}
       <div className="bg-white border border-[#d7dee8] rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-navy">
@@ -212,7 +197,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                     }`}
                   >
                     
-                    {/* Client & Case Code */}
                     <td className="p-4">
                       <div className="space-y-0.5">
                         <div className="font-mono font-bold text-navy text-xs">{c.caseNumber}</div>
@@ -221,7 +205,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                       </div>
                     </td>
 
-                    {/* Case Type & City */}
                     <td className="p-4">
                       <div className="space-y-0.5">
                         <div className="font-bold text-navy">{c.caseType}</div>
@@ -229,7 +212,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                       </div>
                     </td>
 
-                    {/* Urgency Badge */}
                     <td className="p-4">
                       {isCritical ? (
                         <span className="px-2.5 py-1 rounded bg-red-600 text-white font-extrabold text-[10px] uppercase tracking-wider animate-pulse flex items-center space-x-1 w-fit shadow-xs">
@@ -247,17 +229,14 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                       )}
                     </td>
 
-                    {/* Status Badge */}
                     <td className="p-4">
                       {getStatusBadge(c.status)}
                     </td>
 
-                    {/* Last Update */}
                     <td className="p-4 text-[#5b6b7c] font-mono text-[11px] font-medium">
                       {c.updatedAt}
                     </td>
 
-                    {/* Assigned Lawyer */}
                     <td className="p-4">
                       <div className="flex items-center space-x-2">
                         <img
@@ -269,7 +248,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                       </div>
                     </td>
 
-                    {/* Action Button */}
                     <td className="p-4 text-right">
                       <button
                         onClick={(e) => {

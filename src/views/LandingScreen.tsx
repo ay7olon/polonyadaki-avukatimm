@@ -58,7 +58,6 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ currentLanguage, o
   return (
     <div className="min-h-screen bg-canvas text-navy font-sans selection:bg-navy selection:text-white">
 
-      {/* 1. HERO */}
       <section className="relative overflow-hidden bg-gradient-to-b from-navy to-navy-2 text-white border-b border-white/10">
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(900px_360px_at_80%_-10%,rgba(194,164,107,0.18),transparent_55%)]" />
 
@@ -158,7 +157,6 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ currentLanguage, o
         </div>
       </section>
 
-      {/* 2. TRUST METRICS */}
       <section className="py-10 bg-white border-b border-[#d7dee8]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
@@ -186,7 +184,6 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ currentLanguage, o
         </div>
       </section>
 
-      {/* 3. SERVICES */}
       <section className="py-16 bg-canvas border-b border-[#d7dee8]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -235,7 +232,6 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ currentLanguage, o
         </div>
       </section>
 
-      {/* 4. LAWYERS */}
       <section className="py-16 bg-white border-b border-[#d7dee8]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -275,7 +271,6 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ currentLanguage, o
         </div>
       </section>
 
-      {/* 5. TESTIMONIALS */}
       <section className="py-16 bg-canvas border-b border-[#d7dee8]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -324,7 +319,6 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ currentLanguage, o
         </div>
       </section>
 
-      {/* 6. FAQ */}
       <section className="py-16 bg-white border-b border-[#d7dee8]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           <div className="text-center space-y-3">
@@ -356,7 +350,6 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ currentLanguage, o
         </div>
       </section>
 
-      {/* 7. BOTTOM CTA */}
       <section className="py-14 bg-navy text-white">
         <div className="max-w-5xl mx-auto px-4 text-center space-y-5">
           <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">

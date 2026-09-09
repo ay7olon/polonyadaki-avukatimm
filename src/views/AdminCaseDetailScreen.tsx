@@ -1,23 +1,16 @@
 import React, { useState } from 'react';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
-  AlertCircle, 
-  Lock, 
-  Send, 
-  FileText, 
-  User, 
-  Phone, 
-  Mail, 
-  Building, 
-  ShieldCheck, 
+import {
+  CheckCircle2,
+  XCircle,
+  Lock,
+  Send,
+  FileText,
+  User,
   MessageSquare,
-  Sparkles,
   Plus,
   Eye,
   Loader2
-} from 'lucide-react';
+} from 'lucide-react';;
 import { BackLink } from '../components/BackLink';
 import { LegalCase, CaseStatus, CaseDocument, ScreenId } from '../types';
 import { getSignedDocumentUrl } from '../lib/storage';
@@ -124,7 +117,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
   return (
     <div className="min-h-screen bg-canvas text-navy py-8 px-4 sm:px-6 lg:px-8 space-y-8 font-sans">
       
-      {/* Top Header & Quick Navigation */}
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[#d7dee8] pb-6">
         <div className="space-y-1">
           <BackLink fallbackTo="/admin/cases" label="Admin dosya listesine dön" className="mb-2" />
@@ -140,7 +132,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
           </p>
         </div>
 
-        {/* Process Status & Lawyer Assignment Widgets */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-white p-2.5 rounded-2xl border border-[#d7dee8] text-xs shadow-sm w-full sm:w-auto min-w-0">
             <span className="font-bold text-navy shrink-0">Avukat Ata:</span>
@@ -181,10 +172,8 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* LEFT COLUMN: CLIENT SUMMARY + FORM ANSWERS + DOCUMENTS + INTERNAL NOTES (8 Cols) */}
         <div className="lg:col-span-8 space-y-6">
           
-          {/* 1. CLIENT INFO SUMMARY CARD */}
           <div className="bg-white border border-[#d7dee8] rounded-2xl p-6 shadow-sm space-y-4">
             <h3 className="font-extrabold text-sm text-navy uppercase tracking-wider flex items-center space-x-2">
               <User className="w-4 h-4 text-gold" />
@@ -206,7 +195,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
               </div>
             </div>
 
-            {/* Form Answers Grid */}
             <div className="space-y-2">
               <h4 className="font-bold text-xs text-navy">Müşterinin Doldurduğu Başvuru Formu Yanıtları:</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-navy">
@@ -220,7 +208,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
             </div>
           </div>
 
-          {/* 2. UPLOADED DOCUMENTS APPROVE / REJECT SECTION */}
           <div className="bg-white border border-[#d7dee8] rounded-2xl p-6 shadow-sm space-y-4 text-xs">
             <div className="flex justify-between items-center border-b border-[#d7dee8] pb-3">
               <h3 className="font-extrabold text-sm text-navy flex items-center space-x-2">
@@ -244,7 +231,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
                       </div>
                     </div>
 
-                    {/* Status badge & Actions */}
                     <div className="flex items-center space-x-2">
                       {doc.fileUrl && (
                         <button
@@ -292,8 +278,7 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
                     </div>
                   </div>
 
-                  {/* Reject Prompt Reason Textarea */}
-                  {rejectingDocId === doc.id && (
+                                    {rejectingDocId === doc.id && (
                     <div className="p-3 rounded-xl bg-red-50 border border-red-200 space-y-2 text-xs animate-in fade-in">
                       <label className="font-bold text-red-900 block">Red Gerekçesi (Müşteriye İletilecek):</label>
                       <input
@@ -333,7 +318,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
             </div>
           </div>
 
-          {/* 3. INTERNAL LAWYER NOTES PANEL (CONFIDENTIAL LAWYER NOTES) */}
           <div className="bg-amber-50/70 border-2 border-amber-300 rounded-2xl p-6 shadow-sm space-y-4 text-xs">
             <div className="flex items-center justify-between border-b border-amber-200 pb-3">
               <div className="flex items-center space-x-2 text-amber-900">
@@ -345,7 +329,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
               </span>
             </div>
 
-            {/* Existing Internal Notes */}
             <div className="space-y-2">
               {currentCase.internalNotes.length === 0 ? (
                 <p className="text-amber-800 italic text-[11px]">Henüz iç not düşülmedi.</p>
@@ -362,7 +345,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
               )}
             </div>
 
-            {/* Add New Note Input */}
             <form onSubmit={handleAddNote} className="flex items-center space-x-2 pt-2">
               <input
                 type="text"
@@ -385,7 +367,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
 
         </div>
 
-        {/* RIGHT COLUMN: CLIENT CHAT STREAM (4 Cols) */}
         <div className="lg:col-span-4 space-y-6">
           
           <div className="bg-white border border-[#d7dee8] rounded-2xl p-5 shadow-sm space-y-4 text-xs h-[580px] flex flex-col">
@@ -397,7 +378,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
               </div>
             </div>
 
-            {/* Messages Thread */}
             <div className="flex-1 overflow-y-auto space-y-3 pr-1">
               {messages.map(msg => (
                 <div
@@ -417,7 +397,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
               ))}
             </div>
 
-            {/* Admin Quick Reply Form */}
             <form onSubmit={handleAdminChatSubmit} className="pt-2 border-t border-[#d7dee8] flex items-center space-x-2">
               <input
                 type="text"

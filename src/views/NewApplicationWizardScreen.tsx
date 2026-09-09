@@ -236,7 +236,6 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
       <div className="max-w-4xl mx-auto space-y-8">
         <BackLink fallbackTo="/app" label="Müşteri paneline dön" />
         
-        {/* Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-navy-soft border border-[#d7dee8] text-navy text-xs font-bold shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-gold" />
@@ -248,7 +247,6 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
           </p>
         </div>
 
-        {/* STEP PROGRESS BAR */}
         <div className="bg-white border border-[#d7dee8] rounded-2xl p-4 shadow-sm">
           <div className="grid grid-cols-4 gap-2 text-center text-xs">
             
@@ -299,10 +297,8 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
           </div>
         </div>
 
-        {/* STEP CONTENT CONTAINER */}
         <div className="bg-white border border-[#d7dee8] rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
           
-          {/* STEP 1: CATEGORY SELECTION */}
           {step === 1 && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <h3 className="font-extrabold text-lg font-display text-navy">Adım 1: Hukuki Hizmet Türünü Seçin</h3>
@@ -334,7 +330,6 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
             </div>
           )}
 
-          {/* STEP 2: CONDITIONAL QUESTIONS */}
           {step === 2 && (
             <div className="space-y-6 animate-in fade-in duration-300 text-xs">
               <h3 className="font-extrabold text-lg font-display text-navy">Adım 2: Başvuru ve Şehir Detayları</h3>
@@ -400,7 +395,6 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
             </div>
           )}
 
-          {/* STEP 3: URGENCY LEVEL SELECTION */}
           {step === 3 && (
             <div className="space-y-6 animate-in fade-in duration-300 text-xs">
               <div>
@@ -410,7 +404,6 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
-                {/* Normal */}
                 <div
                   onClick={() => setUrgency('normal')}
                   className={`p-5 rounded-2xl border-2 transition cursor-pointer space-y-3 ${
@@ -428,7 +421,6 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
                   </p>
                 </div>
 
-                {/* Urgent */}
                 <div
                   onClick={() => setUrgency('urgent')}
                   className={`p-5 rounded-2xl border-2 transition cursor-pointer space-y-3 ${
@@ -446,7 +438,6 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
                   </p>
                 </div>
 
-                {/* Critical - Red Alert */}
                 <div
                   onClick={() => setUrgency('critical')}
                   className={`p-5 rounded-2xl border-2 transition cursor-pointer space-y-3 relative overflow-hidden ${
@@ -485,12 +476,10 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
             </div>
           )}
 
-          {/* STEP 4: DOCUMENT UPLOAD & SUMMARY */}
           {step === 4 && (
             <div className="space-y-6 animate-in fade-in duration-300 text-xs">
               <h3 className="font-extrabold text-lg font-display text-navy">Adım 4: Belgeleri Yükleyin ve Tamamlayın</h3>
 
-              {/* Drag & Drop Upload Zone */}
               <div className="border-2 border-dashed border-[#d7dee8] hover:border-navy rounded-2xl p-8 text-center space-y-3 bg-navy-soft transition cursor-pointer relative">
                 <input
                   type="file"
@@ -504,7 +493,6 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
                 </div>
               </div>
 
-              {/* Yüklü Belgeler Listesi */}
               <div className="space-y-2">
                 <span className="font-semibold text-navy">Forma Eklenen Evraklar ({uploadedFiles.length})</span>
                 {uploadedFiles.length === 0 && (
@@ -532,7 +520,6 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
                 ))}
               </div>
 
-              {/* Summary Review */}
               <div className="p-4 rounded-xl bg-navy-soft border border-[#d7dee8] space-y-2">
                 <h4 className="font-bold text-navy text-xs">Başvuru Özeti</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-navy font-medium">
@@ -546,7 +533,6 @@ export const NewApplicationWizardScreen: React.FC<NewApplicationWizardScreenProp
             </div>
           )}
 
-          {/* NAV BUTTONS */}
           {stepError && (
             <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
               {stepError}

@@ -1,18 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Send, 
-  Paperclip, 
-  FileText, 
-  ShieldCheck, 
-  Search, 
-  ArrowLeft, 
-  CheckCheck, 
-  User, 
-  Smile,
+import {
+  Send,
+  Paperclip,
+  FileText,
+  ShieldCheck,
+  Search,
+  ArrowLeft,
   Info,
   Loader2,
   MessageSquare
-} from 'lucide-react';
+} from 'lucide-react';;
 import { BackLink } from '../components/BackLink';
 import { LegalCase, ScreenId, UserRole } from '../types';
 import { useCaseMessages } from '../hooks/useCaseMessages';
@@ -141,7 +138,6 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
   return (
     <div className="bg-canvas text-navy flex flex-col md:flex-row h-[calc(100dvh-68px)] md:h-[calc(100vh-80px)] overflow-hidden font-sans">
       
-      {/* 1. LEFT CONVERSATIONS / CASE LIST (320px) */}
       <div className={`w-full md:w-80 bg-white border-r border-[#d7dee8] flex-col shrink-0 ${mobileShowChat ? 'hidden md:flex' : 'flex'} h-full`}>
         
         <div className="p-4 border-b border-[#d7dee8] space-y-3">
@@ -165,7 +161,6 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
           </div>
         </div>
 
-        {/* Case List */}
         <div className="flex-1 overflow-y-auto divide-y divide-[#d7dee8]">
           {filteredCases.length === 0 && (
             <div className="p-6 text-center space-y-2">
@@ -217,10 +212,8 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
 
       </div>
 
-      {/* 2. RIGHT CHAT WINDOW AREA */}
       <div className={`flex-1 bg-canvas flex-col h-full overflow-hidden min-w-0 ${mobileShowChat ? 'flex' : 'hidden md:flex'}`}>
         
-        {/* Chat Header Bar */}
         <div className="p-3 sm:p-4 bg-white border-b border-[#d7dee8] flex items-center justify-between gap-2 shadow-xs">
           <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
             <button
@@ -256,7 +249,6 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
           </button>
         </div>
 
-        {/* Message Thread Area */}
         <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs">
           
           <div className="max-w-md mx-auto p-3 rounded-lg bg-white border border-[#d7dee8] text-center space-y-1 text-[#5b6b7c] text-[11px] shadow-xs">
@@ -322,7 +314,6 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
 
         </div>
 
-        {/* Chat Input Field */}
         <div className="p-4 bg-white border-t border-[#d7dee8] shadow-sm">
           
           {attachedFile && (
@@ -334,7 +325,6 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
 
           <form onSubmit={handleSend} className="flex items-center gap-2">
             
-            {/* Attachment Button */}
             <label className="p-2.5 rounded-lg bg-navy-soft hover:bg-[#d7dee8] text-[#5b6b7c] hover:text-navy cursor-pointer border border-[#d7dee8] transition shrink-0">
               <Paperclip className="w-5 h-5" />
               <input

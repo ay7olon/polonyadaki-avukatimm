@@ -1,7 +1,7 @@
 /**
  * One-time QA/dev seed script.
- * Loads INITIAL_CASES + MOCK_LAWYERS from src/data/mockData.ts into the real
- * Supabase tables (profiles are created via real auth users so RLS behaves
+ * Loads INITIAL_CASES from ./fixtures.ts and MOCK_LAWYERS from client mockData
+ * into the real Supabase tables (profiles are created via real auth users so RLS behaves
  * exactly like production).
  *
  * Usage:
@@ -18,7 +18,8 @@
  */
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
-import { INITIAL_CASES, MOCK_LAWYERS } from '../../src/data/mockData';
+import { MOCK_LAWYERS } from '../../src/data/mockData';
+import { INITIAL_CASES } from './fixtures';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -220,7 +221,7 @@ async function main() {
           case_id: caseId,
           author_id: lawyerIdByName[n.author] ?? null,
           content: n.content,
-          is_private: n.isPrivate,
+          is_private: true,
           created_at: n.date.replace(' ', 'T') + ':00',
         }))
       );

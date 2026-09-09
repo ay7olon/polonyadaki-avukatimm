@@ -48,7 +48,6 @@ export interface LawyerNote {
   author: string;
   date: string;
   content: string;
-  isPrivate: boolean;
 }
 
 export interface ChatMessage {

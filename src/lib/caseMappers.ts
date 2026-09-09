@@ -119,7 +119,6 @@ function mapInternalNote(n: DbInternalNote): LawyerNote {
     author: n.author?.full_name ?? 'Avukat',
     date: formatTurkishDateTime(n.created_at),
     content: n.content,
-    isPrivate: n.is_private,
   };
 }
 

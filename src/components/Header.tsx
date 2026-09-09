@@ -61,8 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="sticky top-0 z-50 bg-navy text-white border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[68px] flex items-center gap-4">
-        {/* Left: brand + primary nav (left-aligned) */}
-        <div className="flex items-center gap-4 min-w-0 flex-1">
+                <div className="flex items-center gap-4 min-w-0 flex-1">
           <div
             onClick={() => onNavigate('landing')}
             className="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer group min-w-0 shrink-0"
@@ -125,8 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
         </div>
 
-        {/* Right: language + account actions */}
-        <div className="hidden lg:flex items-center gap-3 shrink-0 ml-auto">
+                <div className="hidden lg:flex items-center gap-3 shrink-0 ml-auto">
           {langSwitcher}
 
           {isAuthenticated ? (

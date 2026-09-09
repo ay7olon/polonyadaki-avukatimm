@@ -1,4 +1,4 @@
-import { CaseDocument, ChatMessage, LawyerNote, LegalCase, TimelineStep } from '../types';
+import { CaseDocument, LawyerNote, LegalCase, TimelineStep } from '../types';
 
 const TURKISH_MONTHS = [
   'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
@@ -69,16 +69,6 @@ interface DbInternalNote {
   author: DbProfileRef | null;
 }
 
-interface DbMessage {
-  id: string;
-  sender_id: string | null;
-  sender_role: 'client' | 'lawyer' | 'system';
-  body: string;
-  attachments: { name: string; size: string; type: string }[] | null;
-  created_at: string;
-  sender: DbProfileRef | null;
-}
-
 export interface DbLegalCase {
   id: string;
   case_number: string;
@@ -91,14 +81,12 @@ export interface DbLegalCase {
   form_summary: Record<string, string> | null;
   created_at: string;
   updated_at: string;
-  deadline_at: string | null;
   assigned_lawyer_id: string | null;
   client: DbProfileRef | null;
   assigned_lawyer: DbProfileRef | null;
   case_documents: DbCaseDocument[] | null;
   case_timeline_steps: DbTimelineStep[] | null;
   case_internal_notes: DbInternalNote[] | null;
-  case_messages: DbMessage[] | null;
 }
 
 function mapDocument(d: DbCaseDocument): CaseDocument {
@@ -131,26 +119,21 @@ function mapInternalNote(n: DbInternalNote): LawyerNote {
     author: n.author?.full_name ?? 'Avukat',
     date: formatTurkishDateTime(n.created_at),
     content: n.content,
-    isPrivate: n.is_private,
   };
 }
 
-function mapMessage(m: DbMessage, fallbackClientName: string, fallbackLawyer: DbProfileRef | null): ChatMessage {
-  const isLawyer = m.sender_role === 'lawyer';
-  return {
-    id: m.id,
-    senderId: m.sender_id ?? 'system',
-    senderName: m.sender?.full_name ?? (isLawyer ? fallbackLawyer?.full_name ?? 'Avukat' : fallbackClientName),
-    senderRole: m.sender_role,
-    avatar: isLawyer ? fallbackLawyer?.avatar_url ?? undefined : undefined,
-    text: m.body,
-    timestamp: formatTurkishDateTime(m.created_at),
-    attachments: m.attachments && m.attachments.length > 0 ? m.attachments : undefined,
-  };
+function progressFromTimeline(steps: TimelineStep[]): number {
+  if (steps.length === 0) return 0;
+  const completed = steps.filter((s) => s.status === 'completed').length;
+  return Math.round((completed / steps.length) * 100);
 }
 
 export function mapDbCaseToLegalCase(row: DbLegalCase): LegalCase {
   const clientName = row.client?.full_name ?? '';
+  const timeline = (row.case_timeline_steps ?? [])
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map(mapTimelineStep);
 
   return {
     id: row.id,
@@ -165,18 +148,14 @@ export function mapDbCaseToLegalCase(row: DbLegalCase): LegalCase {
     urgency: row.urgency,
     createdAt: toIsoDateOnly(row.created_at),
     updatedAt: toIsoDateOnly(row.updated_at),
-    deadlineAt: row.deadline_at ?? undefined,
     assignedLawyerId: row.assigned_lawyer_id ?? undefined,
     assignedLawyer: row.assigned_lawyer?.full_name ?? 'Henüz Atanmadı',
     lawyerAvatar: row.assigned_lawyer?.avatar_url ?? DEFAULT_LAWYER_AVATAR,
-    progressPercent: row.progress_percent,
+    progressPercent: progressFromTimeline(timeline),
     documents: (row.case_documents ?? []).map(mapDocument),
-    timeline: (row.case_timeline_steps ?? [])
-      .slice()
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map(mapTimelineStep),
+    timeline,
     internalNotes: (row.case_internal_notes ?? []).map(mapInternalNote),
-    messages: (row.case_messages ?? []).map((m) => mapMessage(m, clientName, row.assigned_lawyer)),
+    messages: [],
     formSummary: row.form_summary ?? {},
   };
 }

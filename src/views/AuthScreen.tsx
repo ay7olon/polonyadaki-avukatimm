@@ -5,7 +5,6 @@ import {
   Mail,
   Phone,
   User,
-  Globe,
   ArrowRight,
   ShieldCheck,
   Loader2,
@@ -13,14 +12,19 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Language, ScreenId } from '../types';
-import { useAuth } from '../hooks/useAuth';
+import type { SignUpParams } from '../hooks/useAuth';
 import { isValidEmail, isValidFullName, isValidPhone } from '../lib/validation';
+import { BackLink } from '../components/BackLink';
 
 interface AuthScreenProps {
   currentLanguage: Language;
-  onLanguageChange: (lang: Language) => void;
+  onLanguageChange?: (lang: Language) => void;
   onNavigate: (screen: ScreenId) => void;
   passwordRecoveryPending?: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (params: SignUpParams) => Promise<{ error: string | null }>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (password: string) => Promise<{ error: string | null }>;
 }
 
 type AuthMode = 'login' | 'register' | 'forgot' | 'update_password';
@@ -33,13 +37,14 @@ const SHOW_DEMO_LOGINS =
   import.meta.env.DEV && Boolean(DEMO_CLIENT_EMAIL && DEMO_LAWYER_EMAIL && DEMO_PASSWORD);
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
-  currentLanguage,
-  onLanguageChange,
+  currentLanguage: _currentLanguage,
   onNavigate,
   passwordRecoveryPending = false,
+  signIn,
+  signUp,
+  resetPassword,
+  updatePassword,
 }) => {
-  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
-
   const [mode, setMode] = useState<AuthMode>(passwordRecoveryPending ? 'update_password' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -182,6 +187,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(700px_320px_at_50%_0%,rgba(11,31,58,0.08),transparent_60%)]" />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md space-y-4 text-center relative z-10">
+        <div className="flex justify-start">
+          <BackLink fallbackTo="/" label="Ana sayfaya dön" />
+        </div>
         <div
           onClick={() => onNavigate('landing')}
           className="inline-flex items-center space-x-2.5 cursor-pointer group"
@@ -207,21 +215,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               ? 'Güvenliğiniz için güçlü bir şifre seçin'
               : 'Polonya\'daki dava ve Karta Pobytu başvurularınızı güvenle yönetin'}
         </p>
-
-        <div className="inline-flex items-center bg-white p-1 rounded-md border border-[#d7dee8] text-xs">
-          <Globe className="w-3.5 h-3.5 text-[#5b6b7c] ml-2 mr-1" />
-          {(['TR', 'PL', 'EN'] as Language[]).map(lang => (
-            <button
-              key={lang}
-              onClick={() => onLanguageChange(lang)}
-              className={`px-2.5 py-1 rounded font-bold transition ${
-                currentLanguage === lang ? 'bg-navy text-white' : 'text-[#5b6b7c] hover:text-navy'
-              }`}
-            >
-              {lang}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md relative z-10">

@@ -1,21 +1,19 @@
-import React, { useState } from 'react';
-import { 
-  Send, 
-  Paperclip, 
-  FileText, 
-  ShieldCheck, 
-  Search, 
-  ArrowLeft, 
-  CheckCheck, 
-  User, 
-  Smile,
+import React, { useEffect, useState } from 'react';
+import {
+  Send,
+  Paperclip,
+  FileText,
+  ShieldCheck,
+  Search,
+  ArrowLeft,
   Info,
   Loader2,
   MessageSquare
-} from 'lucide-react';
+} from 'lucide-react';;
+import { BackLink } from '../components/BackLink';
 import { LegalCase, ScreenId, UserRole } from '../types';
 import { useCaseMessages } from '../hooks/useCaseMessages';
-import { formatFileSize, uploadCaseDocumentFile } from '../lib/storage';
+import { formatFileSize, getSignedDocumentUrl, uploadCaseDocumentFile } from '../lib/storage';
 import { useToast } from '../hooks/useToast';
 import { validateUploadFile } from '../lib/validation';
 
@@ -24,7 +22,7 @@ interface MessagingScreenProps {
   activeCaseId?: string;
   currentUserId: string;
   currentUserRole: UserRole;
-  onNavigate: (screen: ScreenId) => void;
+  onNavigate: (screen: ScreenId, caseId?: string) => void;
 }
 
 export const MessagingScreen: React.FC<MessagingScreenProps> = ({
@@ -41,6 +39,13 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
   const [mobileShowChat, setMobileShowChat] = useState(Boolean(activeCaseId));
   const [searchTerm, setSearchTerm] = useState('');
   const { showError } = useToast();
+
+  useEffect(() => {
+    if (activeCaseId) {
+      setSelectedCaseId(activeCaseId);
+      setMobileShowChat(true);
+    }
+  }, [activeCaseId]);
 
   const filteredCases = cases.filter(c => {
     const q = searchTerm.trim().toLowerCase();
@@ -69,6 +74,7 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
   const handleSelectCase = (caseId: string) => {
     setSelectedCaseId(caseId);
     setMobileShowChat(true);
+    onNavigate('messaging', caseId);
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -101,6 +107,19 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
     setSending(false);
   };
 
+  const handleOpenAttachment = async (path?: string) => {
+    if (!path) {
+      showError('Bu ekin depolama yolu bulunamadı.');
+      return;
+    }
+    const url = await getSignedDocumentUrl(path);
+    if (!url) {
+      showError('Ek dosya açılamadı.');
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   if (!selectedCase) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4 space-y-3">
@@ -119,10 +138,10 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
   return (
     <div className="bg-canvas text-navy flex flex-col md:flex-row h-[calc(100dvh-68px)] md:h-[calc(100vh-80px)] overflow-hidden font-sans">
       
-      {/* 1. LEFT CONVERSATIONS / CASE LIST (320px) */}
       <div className={`w-full md:w-80 bg-white border-r border-[#d7dee8] flex-col shrink-0 ${mobileShowChat ? 'hidden md:flex' : 'flex'} h-full`}>
         
         <div className="p-4 border-b border-[#d7dee8] space-y-3">
+          <BackLink fallbackTo="/app" label="Panele dön" />
           <div className="flex items-center justify-between">
             <h3 className="font-display font-semibold text-base text-navy">Avukat Mesajları</h3>
             <span className="text-[11px] px-2 py-0.5 rounded bg-navy-soft text-navy font-bold border border-[#d7dee8]">
@@ -142,7 +161,6 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
           </div>
         </div>
 
-        {/* Case List */}
         <div className="flex-1 overflow-y-auto divide-y divide-[#d7dee8]">
           {filteredCases.length === 0 && (
             <div className="p-6 text-center space-y-2">
@@ -162,7 +180,6 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
             </div>
           )}
           {filteredCases.map(c => {
-            const lastMsg = c.messages[c.messages.length - 1];
             const isSelected = c.id === selectedCaseId;
 
             return (
@@ -185,7 +202,7 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
                   </div>
                   <p className="text-[11px] text-gold font-bold truncate">{c.caseType}</p>
                   <p className="text-[11px] text-[#5b6b7c] truncate">
-                    {lastMsg ? lastMsg.text : 'Yeni konuşma başlatıldı.'}
+                    {c.clientName || 'Dosya mesajlaşması'}
                   </p>
                 </div>
               </div>
@@ -195,10 +212,8 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
 
       </div>
 
-      {/* 2. RIGHT CHAT WINDOW AREA */}
       <div className={`flex-1 bg-canvas flex-col h-full overflow-hidden min-w-0 ${mobileShowChat ? 'flex' : 'hidden md:flex'}`}>
         
-        {/* Chat Header Bar */}
         <div className="p-3 sm:p-4 bg-white border-b border-[#d7dee8] flex items-center justify-between gap-2 shadow-xs">
           <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
             <button
@@ -219,16 +234,14 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
                 <h3 className="font-bold text-sm text-navy truncate">{selectedCase.assignedLawyer}</h3>
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" title="Varşova Barosu Kayıtlı Avukat" />
               </div>
-              <p className="text-[11px] text-[#5b6b7c] flex items-center space-x-1 truncate">
-                <span className="text-emerald-600 font-bold shrink-0">● Çevrimiçi</span>
-                <span className="shrink-0">•</span>
-                <span className="font-mono font-bold truncate">Dosya: {selectedCase.caseNumber}</span>
+              <p className="text-[11px] text-[#5b6b7c] font-mono font-bold truncate">
+                Dosya: {selectedCase.caseNumber}
               </p>
             </div>
           </div>
 
           <button
-            onClick={() => onNavigate('case_timeline')}
+            onClick={() => onNavigate('case_timeline', selectedCase.id)}
             className="px-2.5 sm:px-3 py-1.5 rounded-md bg-navy-soft hover:bg-[#d7dee8] text-navy text-xs font-bold flex items-center space-x-1 transition border border-[#d7dee8] shrink-0"
           >
             <Info className="w-3.5 h-3.5 text-[#5b6b7c]" />
@@ -236,13 +249,13 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
           </button>
         </div>
 
-        {/* Message Thread Area */}
         <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs">
           
-          {/* Encryption & Legal Disclaimer Banner */}
           <div className="max-w-md mx-auto p-3 rounded-lg bg-white border border-[#d7dee8] text-center space-y-1 text-[#5b6b7c] text-[11px] shadow-xs">
-            <p className="font-bold text-navy">🔒 Uçtan Uca Güvenli Avukat-Müvekkil Yazışması</p>
-            <p>Bu sohbette paylaşılan evraklar Polonya Avukatlık Meslek Sırrı (Tajemnica adwokacka) koruması altındadır.</p>
+            <p className="font-bold text-navy">Güvenli avukat–müvekkil yazışması</p>
+            <p>
+              Mesajlar hesabınıza bağlı olarak korunur. Bu sohbette paylaşılan bilgiler Polonya Avukatlık Meslek Sırrı (Tajemnica adwokacka) kapsamında değerlendirilir.
+            </p>
           </div>
 
           {messages.map(msg => {
@@ -274,16 +287,22 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
 
                   <p className="leading-relaxed text-xs">{msg.text}</p>
 
-                  {/* Attachment if present */}
                   {msg.attachments && msg.attachments.length > 0 && (
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-1.5">
                       {msg.attachments.map((att, i) => (
-                        <div key={i} className={`p-2 rounded border flex items-center space-x-2 text-[11px] font-semibold ${
-                          isMe ? 'bg-navy-2 border-white/10 text-gold' : 'bg-navy-soft border-[#d7dee8] text-navy'
-                        }`}>
-                          <FileText className="w-4 h-4" />
-                          <span>{att.name} ({att.size})</span>
-                        </div>
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => handleOpenAttachment(att.path)}
+                          className={`w-full p-2 rounded border flex items-center space-x-2 text-[11px] font-semibold text-left transition ${
+                            isMe
+                              ? 'bg-navy-2 border-white/10 text-gold hover:bg-navy-2/80'
+                              : 'bg-navy-soft border-[#d7dee8] text-navy hover:bg-[#d7dee8]'
+                          }`}
+                        >
+                          <FileText className="w-4 h-4 shrink-0" />
+                          <span className="truncate">{att.name} ({att.size})</span>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -295,7 +314,6 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
 
         </div>
 
-        {/* Chat Input Field */}
         <div className="p-4 bg-white border-t border-[#d7dee8] shadow-sm">
           
           {attachedFile && (
@@ -307,7 +325,6 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
 
           <form onSubmit={handleSend} className="flex items-center gap-2">
             
-            {/* Attachment Button */}
             <label className="p-2.5 rounded-lg bg-navy-soft hover:bg-[#d7dee8] text-[#5b6b7c] hover:text-navy cursor-pointer border border-[#d7dee8] transition shrink-0">
               <Paperclip className="w-5 h-5" />
               <input

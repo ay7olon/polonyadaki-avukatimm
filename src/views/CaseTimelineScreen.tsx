@@ -1,25 +1,16 @@
 import React, { useState } from 'react';
-import { 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  FileText, 
-  Download, 
-  Upload, 
-  MessageSquare, 
-  ArrowLeft, 
-  UserCheck, 
-  Building,
-  ShieldCheck,
-  Calendar,
+import {
+  CheckCircle2,
+  Clock,
+  FileText,
+  Upload,
+  MessageSquare,
   Loader2,
   Eye
-} from 'lucide-react';
+} from 'lucide-react';;
+import { BackLink } from '../components/BackLink';
 import { LegalCase, ScreenId } from '../types';
 import { getSignedDocumentUrl } from '../lib/storage';
-import { useNowTick } from '../hooks/useNowTick';
-import { getDeadlineInfo, formatDeadlineDateTime } from '../lib/deadline';
-import { DeadlineBadge } from '../components/DeadlineBadge';
 
 interface CaseTimelineScreenProps {
   currentCase: LegalCase;
@@ -34,8 +25,6 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
 }) => {
   const [uploading, setUploading] = useState(false);
   const [viewingDocId, setViewingDocId] = useState<string | null>(null);
-  const now = useNowTick();
-  const deadlineInfo = getDeadlineInfo(currentCase.deadlineAt, now);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,16 +47,9 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
   return (
     <div className="min-h-screen bg-canvas text-navy py-8 px-4 sm:px-6 lg:px-8 space-y-8 font-sans">
       
-      {/* Top Header & Back Button */}
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#d7dee8] pb-6">
         <div className="space-y-1">
-          <button
-            onClick={() => onNavigate('client_dashboard')}
-            className="text-xs text-[#5b6b7c] hover:text-navy flex items-center space-x-1 mb-2 font-bold transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Müşteri Paneline Dön</span>
-          </button>
+          <BackLink fallbackTo="/app" label="Müşteri paneline dön" className="mb-2" />
           <div className="flex items-center space-x-3">
             <h1 className="font-display text-2xl font-semibold text-navy">Süreç Takip Kartı</h1>
             <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-white border border-[#d7dee8] text-gold shadow-sm">
@@ -90,33 +72,8 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
         </div>
       </div>
 
-      {/* Deadline Reminder Banner */}
-      {deadlineInfo.hasDeadline && (
-        <div className={`max-w-5xl mx-auto rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border shadow-sm ${
-          deadlineInfo.isOverdue
-            ? 'bg-red-600 border-red-700 text-white'
-            : deadlineInfo.tone === 'critical'
-            ? 'bg-red-50 border-red-200 text-red-900'
-            : deadlineInfo.tone === 'warning'
-            ? 'bg-amber-50 border-amber-200 text-amber-900'
-            : 'bg-navy-soft border-[#d7dee8] text-[#5b6b7c]'
-        }`}>
-          <div className="flex items-center space-x-2 text-xs font-bold">
-            <Calendar className="w-4 h-4" />
-            <span>
-              {deadlineInfo.isOverdue ? 'Yasal son tarih geçti, avukatınızla iletişime geçin' : 'Yasal Son Tarih'}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="font-mono font-semibold">{formatDeadlineDateTime(currentCase.deadlineAt)}</span>
-            <DeadlineBadge info={deadlineInfo} />
-          </div>
-        </div>
-      )}
-
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* LEFT COLUMN: VERTICAL TIMELINE STEPPER (8 Cols) */}
         <div className="lg:col-span-8 bg-white border border-[#d7dee8] rounded-lg p-6 sm:p-8 shadow-sm space-y-6">
           
           <div className="flex items-center justify-between border-b border-[#d7dee8] pb-4">
@@ -127,7 +84,6 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
             <span className="text-xs font-bold text-[#5b6b7c] bg-navy-soft px-2.5 py-1 rounded-full">İlerleme: %{currentCase.progressPercent}</span>
           </div>
 
-          {/* Dikey Timeline Stepper */}
           <div className="relative pl-6 space-y-8 before:absolute before:left-3.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#d7dee8]">
             {currentCase.timeline.map((stepItem, idx) => {
               const isCompleted = stepItem.status === 'completed';
@@ -136,7 +92,6 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
               return (
                 <div key={stepItem.id} className="relative group">
                   
-                  {/* Stepper Dot */}
                   <div className={`absolute -left-[30px] top-0.5 w-6 h-6 rounded-full flex items-center justify-center border-2 transition ${
                     isCompleted
                       ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
@@ -147,7 +102,6 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
                     {isCompleted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <span className="text-[10px] font-bold">{idx + 1}</span>}
                   </div>
 
-                  {/* Step Card Content */}
                   <div className={`p-4 rounded-lg border transition ${
                     isCurrent
                       ? 'bg-navy-soft/60 border-navy/20 shadow-sm'
@@ -184,10 +138,8 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
 
         </div>
 
-        {/* RIGHT COLUMN: LAWYER PROFILE & DOCUMENTS (4 Cols) */}
         <div className="lg:col-span-4 space-y-6">
           
-          {/* Assigned Lawyer Card */}
           <div className="bg-white border border-[#d7dee8] rounded-lg p-5 space-y-4 shadow-sm">
             <h4 className="font-bold text-xs uppercase tracking-wider text-gold">Atanan Sorumlu Avukat</h4>
             <div className="flex items-center space-x-3">
@@ -199,7 +151,6 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
               <div>
                 <h5 className="font-bold text-sm text-navy">{currentCase.assignedLawyer}</h5>
                 <p className="text-xs text-[#5b6b7c]">Varşova Barosu Kayıtlı</p>
-                <div className="text-[10px] text-emerald-600 font-bold mt-0.5">● Çevrimiçi</div>
               </div>
             </div>
             <button
@@ -210,8 +161,7 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
             </button>
           </div>
 
-          {/* Uploaded Documents Grid & Status */}
-          <div className="bg-white border border-[#d7dee8] rounded-lg p-5 space-y-4 shadow-sm text-xs">
+                    <div className="bg-white border border-[#d7dee8] rounded-lg p-5 space-y-4 shadow-sm text-xs">
             <div className="flex justify-between items-center">
               <h4 className="font-bold text-xs uppercase tracking-wider text-gold">Dosya Evrakları</h4>
               <span className="text-[#5b6b7c] font-semibold">{currentCase.documents.length} Evrak</span>
@@ -245,7 +195,6 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
                     </div>
                   </div>
 
-                  {/* Rejection reason if any */}
                   {doc.rejectionReason && (
                     <div className="p-2 rounded bg-red-50 border border-red-200 text-[10px] text-red-900">
                       <strong>Avukat Notu:</strong> {doc.rejectionReason}
@@ -255,7 +204,6 @@ export const CaseTimelineScreen: React.FC<CaseTimelineScreenProps> = ({
               ))}
             </div>
 
-            {/* Upload Action Button */}
             <label className="w-full py-2.5 rounded-md bg-gold hover:brightness-105 text-navy font-bold text-xs shadow-md transition flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-60">
               <input type="file" className="hidden" onChange={handleFileChange} disabled={uploading} />
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}

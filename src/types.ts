@@ -48,7 +48,6 @@ export interface LawyerNote {
   author: string;
   date: string;
   content: string;
-  isPrivate: boolean;
 }
 
 export interface ChatMessage {
@@ -75,7 +74,6 @@ export interface LegalCase {
   urgency: UrgencyLevel;
   createdAt: string;
   updatedAt: string;
-  deadlineAt?: string;
   assignedLawyerId?: string;
   assignedLawyer: string;
   lawyerAvatar: string;
@@ -85,16 +83,4 @@ export interface LegalCase {
   internalNotes: LawyerNote[];
   messages: ChatMessage[];
   formSummary: Record<string, string>;
-}
-
-export interface ScreenDesignNote {
-  screenId: ScreenId;
-  screenNumber: number;
-  screenName: string;
-  targetUser: 'Client' | 'Lawyer/Admin' | 'Public' | 'Client & Lawyer';
-  purpose: string;
-  layoutStructure: string;
-  colorPaletteNotes: string;
-  componentArchitecture: string[];
-  devNotesForCursor: string;
 }

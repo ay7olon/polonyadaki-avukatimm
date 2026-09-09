@@ -1,44 +1,33 @@
 import React, { useState } from 'react';
-import { 
-  ShieldCheck, 
-  Search, 
-  Filter, 
-  AlertCircle, 
-  Clock, 
-  CheckCircle2, 
-  ChevronRight, 
-  UserPlus, 
-  FileText, 
-  ArrowUpDown,
+import {
+  Search,
+  AlertCircle,
+  ChevronRight,
   SlidersHorizontal,
   Flame
-} from 'lucide-react';
+} from 'lucide-react';;
+import { BackLink } from '../components/BackLink';
 import { LegalCase, UrgencyLevel, CaseStatus, ScreenId } from '../types';
 import { LawyerOption } from '../hooks/useLawyers';
-import { useNowTick } from '../hooks/useNowTick';
-import { getDeadlineInfo } from '../lib/deadline';
-import { DeadlineBadge } from '../components/DeadlineBadge';
 
 interface AdminCaseListScreenProps {
   cases: LegalCase[];
   lawyers: LawyerOption[];
   loading?: boolean;
-  onSelectCase: (c: LegalCase) => void;
-  onNavigate: (screen: ScreenId) => void;
+  onSelectCase?: (c: LegalCase) => void;
+  onNavigate: (screen: ScreenId, caseId?: string) => void;
 }
 
 export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
   cases,
   lawyers,
   loading,
-  onSelectCase,
   onNavigate,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUrgency, setSelectedUrgency] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedLawyer, setSelectedLawyer] = useState<string>('all');
-  const now = useNowTick();
 
   // Filtering Logic
   const filteredCases = cases.filter(c => {
@@ -69,19 +58,13 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
   };
 
   const criticalCount = cases.filter(c => c.urgency === 'critical').length;
-  const activeCases = cases.filter(c => c.status !== 'completed' && c.status !== 'rejected');
-  const overdueCount = activeCases.filter(c => getDeadlineInfo(c.deadlineAt, now).isOverdue).length;
-  const dueSoonCount = activeCases.filter(c => {
-    const info = getDeadlineInfo(c.deadlineAt, now);
-    return !info.isOverdue && (info.tone === 'critical' || info.tone === 'warning');
-  }).length;
 
   return (
     <div className="min-h-screen bg-canvas text-navy py-8 px-4 sm:px-6 lg:px-8 space-y-6 font-sans">
       
-      {/* Top Admin Header Bar */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[#d7dee8] pb-6">
         <div>
+          <BackLink fallbackTo="/" label="Ana sayfaya dön" className="mb-2" />
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded bg-navy text-white font-extrabold text-[11px] uppercase tracking-wider">
               Avukat & Paralegal Paneli
@@ -91,20 +74,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
           <h1 className="text-3xl font-extrabold font-display text-navy mt-1">Admin Dosya Yönetim Tablosu</h1>
         </div>
 
-        {/* Urgent Stats Alert */}
         <div className="flex flex-wrap items-center gap-3">
-          {overdueCount > 0 && (
-            <div className="px-4 py-2 rounded-xl bg-red-600 border border-red-700 flex items-center space-x-2 text-xs text-white shadow-sm animate-pulse">
-              <AlertCircle className="w-4 h-4" />
-              <span><strong className="text-sm">{overdueCount}</strong> Dosyanın Son Tarihi Geçti</span>
-            </div>
-          )}
-          {dueSoonCount > 0 && (
-            <div className="px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 flex items-center space-x-2 text-xs text-amber-900 shadow-sm">
-              <Clock className="w-4 h-4 text-amber-600" />
-              <span><strong className="text-amber-700 text-sm">{dueSoonCount}</strong> Dosyanın Süresi Yaklaşıyor</span>
-            </div>
-          )}
           <div className="px-4 py-2 rounded-xl bg-red-50 border border-red-200 flex items-center space-x-2 text-xs text-red-900 shadow-sm">
             <Flame className="w-4 h-4 text-red-600 animate-bounce" />
             <span><strong className="text-red-700 text-sm">{criticalCount}</strong> Adet Çok Acil Dosya Müdahale Bekliyor</span>
@@ -112,7 +82,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
         </div>
       </div>
 
-      {/* FILTER BAR SECTION */}
       <div className="bg-white border border-[#d7dee8] rounded-2xl p-4 shadow-sm space-y-4">
         <div className="flex items-center space-x-2 text-xs font-bold text-[#5b6b7c] uppercase tracking-wider">
           <SlidersHorizontal className="w-4 h-4 text-navy" />
@@ -121,7 +90,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs font-medium">
           
-          {/* Search Input */}
           <div className="relative">
             <Search className="w-4 h-4 text-[#5b6b7c] absolute left-3 top-3" />
             <input
@@ -133,7 +101,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
             />
           </div>
 
-          {/* Urgency Filter */}
           <select
             value={selectedUrgency}
             onChange={e => setSelectedUrgency(e.target.value)}
@@ -145,7 +112,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
             <option value="normal">⚪ Normal Süreç</option>
           </select>
 
-          {/* Status Filter */}
           <select
             value={selectedStatus}
             onChange={e => setSelectedStatus(e.target.value)}
@@ -158,7 +124,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
             <option value="completed">Sonuçlandı</option>
           </select>
 
-          {/* Lawyer Filter */}
           <select
             value={selectedLawyer}
             onChange={e => setSelectedLawyer(e.target.value)}
@@ -170,7 +135,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
             ))}
           </select>
 
-          {/* Reset Filters Button */}
           <button
             onClick={() => {
               setSearchTerm('');
@@ -186,7 +150,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
         </div>
       </div>
 
-      {/* DATA TABLE */}
       <div className="bg-white border border-[#d7dee8] rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-navy">
@@ -196,7 +159,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                 <th className="p-4">Dosya Kodu / Müşteri</th>
                 <th className="p-4">Süreç Türü & Şehir</th>
                 <th className="p-4">Aciliyet Etiketi</th>
-                <th className="p-4">Kalan Süre</th>
                 <th className="p-4">Mevcut Durum</th>
                 <th className="p-4">Son Güncelleme</th>
                 <th className="p-4">Atanan Avukat</th>
@@ -207,28 +169,26 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
             <tbody className="divide-y divide-[#d7dee8]">
               {loading && (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center text-[#5b6b7c]">
+                  <td colSpan={7} className="p-10 text-center text-[#5b6b7c]">
                     <div className="w-6 h-6 border-2 border-[#d7dee8] border-t-navy rounded-full animate-spin mx-auto" />
                   </td>
                 </tr>
               )}
               {!loading && filteredCases.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center text-[#5b6b7c] text-sm">
+                  <td colSpan={7} className="p-10 text-center text-[#5b6b7c] text-sm">
                     Kriterlere uyan dosya bulunamadı.
                   </td>
                 </tr>
               )}
               {!loading && filteredCases.map(c => {
                 const isCritical = c.urgency === 'critical';
-                const deadlineInfo = getDeadlineInfo(c.deadlineAt, now);
 
                 return (
                   <tr
                     key={c.id}
                     onClick={() => {
-                      onSelectCase(c);
-                      onNavigate('admin_case_detail');
+                      onNavigate('admin_case_detail', c.id);
                     }}
                     className={`cursor-pointer transition hover:bg-navy-soft ${
                       isCritical
@@ -237,7 +197,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                     }`}
                   >
                     
-                    {/* Client & Case Code */}
                     <td className="p-4">
                       <div className="space-y-0.5">
                         <div className="font-mono font-bold text-navy text-xs">{c.caseNumber}</div>
@@ -246,7 +205,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                       </div>
                     </td>
 
-                    {/* Case Type & City */}
                     <td className="p-4">
                       <div className="space-y-0.5">
                         <div className="font-bold text-navy">{c.caseType}</div>
@@ -254,7 +212,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                       </div>
                     </td>
 
-                    {/* Urgency Badge */}
                     <td className="p-4">
                       {isCritical ? (
                         <span className="px-2.5 py-1 rounded bg-red-600 text-white font-extrabold text-[10px] uppercase tracking-wider animate-pulse flex items-center space-x-1 w-fit shadow-xs">
@@ -272,22 +229,14 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                       )}
                     </td>
 
-                    {/* Deadline Countdown */}
-                    <td className="p-4">
-                      <DeadlineBadge info={deadlineInfo} />
-                    </td>
-
-                    {/* Status Badge */}
                     <td className="p-4">
                       {getStatusBadge(c.status)}
                     </td>
 
-                    {/* Last Update */}
                     <td className="p-4 text-[#5b6b7c] font-mono text-[11px] font-medium">
                       {c.updatedAt}
                     </td>
 
-                    {/* Assigned Lawyer */}
                     <td className="p-4">
                       <div className="flex items-center space-x-2">
                         <img
@@ -299,13 +248,11 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                       </div>
                     </td>
 
-                    {/* Action Button */}
                     <td className="p-4 text-right">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onSelectCase(c);
-                          onNavigate('admin_case_detail');
+                          onNavigate('admin_case_detail', c.id);
                         }}
                         className="px-3 py-1.5 rounded-lg bg-navy hover:bg-navy-2 text-white font-bold text-xs transition flex items-center space-x-1 ml-auto shadow-xs"
                       >

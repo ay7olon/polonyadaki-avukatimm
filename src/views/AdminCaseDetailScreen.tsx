@@ -23,9 +23,6 @@ import { LegalCase, CaseStatus, CaseDocument, ScreenId } from '../types';
 import { getSignedDocumentUrl } from '../lib/storage';
 import { useCaseMessages } from '../hooks/useCaseMessages';
 import { LawyerOption } from '../hooks/useLawyers';
-import { useNowTick } from '../hooks/useNowTick';
-import { getDeadlineInfo, formatDeadlineDateTime } from '../lib/deadline';
-import { DeadlineBadge } from '../components/DeadlineBadge';
 import { useToast } from '../hooks/useToast';
 
 interface AdminCaseDetailScreenProps {
@@ -61,8 +58,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [processingDocId, setProcessingDocId] = useState<string | null>(null);
   const [addingNote, setAddingNote] = useState(false);
-  const now = useNowTick();
-  const deadlineInfo = getDeadlineInfo(currentCase.deadlineAt, now);
   const { showError } = useToast();
 
   const { messages, sendMessage } = useCaseMessages(currentCase.id, {
@@ -183,30 +178,6 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Deadline Reminder Banner */}
-      {deadlineInfo.hasDeadline && (
-        <div className={`max-w-7xl mx-auto rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border shadow-sm ${
-          deadlineInfo.isOverdue
-            ? 'bg-red-600 border-red-700 text-white'
-            : deadlineInfo.tone === 'critical'
-            ? 'bg-red-50 border-red-200 text-red-900'
-            : deadlineInfo.tone === 'warning'
-            ? 'bg-amber-50 border-amber-200 text-amber-900'
-            : 'bg-navy-soft border-[#d7dee8] text-navy'
-        }`}>
-          <div className="flex items-center space-x-2 text-xs font-bold">
-            <AlertCircle className="w-4 h-4" />
-            <span>
-              {deadlineInfo.isOverdue ? 'Bu dosyanın yasal son tarihi geçti!' : 'Yasal Son Tarih Hatırlatması'}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="font-mono font-semibold">{formatDeadlineDateTime(currentCase.deadlineAt)}</span>
-            <DeadlineBadge info={deadlineInfo} />
-          </div>
-        </div>
-      )}
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         

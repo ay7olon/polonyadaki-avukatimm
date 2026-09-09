@@ -75,7 +75,6 @@ export interface LegalCase {
   urgency: UrgencyLevel;
   createdAt: string;
   updatedAt: string;
-  deadlineAt?: string;
   assignedLawyerId?: string;
   assignedLawyer: string;
   lawyerAvatar: string;

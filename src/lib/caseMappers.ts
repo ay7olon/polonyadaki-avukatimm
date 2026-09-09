@@ -91,7 +91,6 @@ export interface DbLegalCase {
   form_summary: Record<string, string> | null;
   created_at: string;
   updated_at: string;
-  deadline_at: string | null;
   assigned_lawyer_id: string | null;
   client: DbProfileRef | null;
   assigned_lawyer: DbProfileRef | null;
@@ -165,7 +164,6 @@ export function mapDbCaseToLegalCase(row: DbLegalCase): LegalCase {
     urgency: row.urgency,
     createdAt: toIsoDateOnly(row.created_at),
     updatedAt: toIsoDateOnly(row.updated_at),
-    deadlineAt: row.deadline_at ?? undefined,
     assignedLawyerId: row.assigned_lawyer_id ?? undefined,
     assignedLawyer: row.assigned_lawyer?.full_name ?? 'Henüz Atanmadı',
     lawyerAvatar: row.assigned_lawyer?.avatar_url ?? DEFAULT_LAWYER_AVATAR,

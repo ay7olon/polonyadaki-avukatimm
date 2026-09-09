@@ -14,7 +14,6 @@ function baseRow(overrides: Partial<DbLegalCase> = {}): DbLegalCase {
     form_summary: { Şehir: 'Varşova' },
     created_at: '2026-08-01T10:00:00.000Z',
     updated_at: '2026-08-01T10:00:00.000Z',
-    deadline_at: null,
     assigned_lawyer_id: null,
     client: { full_name: 'Ahmet Yılmaz', email: 'ahmet@gmail.com', phone: '+48 570 123 456' },
     assigned_lawyer: null,
@@ -36,7 +35,6 @@ describe('mapDbCaseToLegalCase', () => {
     expect(result.assignedLawyerId).toBeUndefined();
     expect(result.documents).toEqual([]);
     expect(result.timeline).toEqual([]);
-    expect(result.deadlineAt).toBeUndefined();
     expect(result.createdAt).toBe('2026-08-01');
   });
 
@@ -53,16 +51,14 @@ describe('mapDbCaseToLegalCase', () => {
     expect(result.timeline.map(t => t.id)).toEqual(['t1', 't2']);
   });
 
-  it('carries through deadline_at and assigned lawyer info', () => {
+  it('carries through assigned lawyer info', () => {
     const result = mapDbCaseToLegalCase(
       baseRow({
-        deadline_at: '2026-08-05T11:36:00.000Z',
         assigned_lawyer_id: 'lawyer-1',
         assigned_lawyer: { full_name: 'Av. Piotr Kowalski', avatar_url: 'https://example.com/a.png' },
       })
     );
 
-    expect(result.deadlineAt).toBe('2026-08-05T11:36:00.000Z');
     expect(result.assignedLawyerId).toBe('lawyer-1');
     expect(result.assignedLawyer).toBe('Av. Piotr Kowalski');
     expect(result.lawyerAvatar).toBe('https://example.com/a.png');

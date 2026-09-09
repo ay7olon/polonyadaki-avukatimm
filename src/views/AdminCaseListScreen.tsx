@@ -4,7 +4,6 @@ import {
   Search, 
   Filter, 
   AlertCircle, 
-  Clock, 
   CheckCircle2, 
   ChevronRight, 
   UserPlus, 
@@ -16,9 +15,6 @@ import {
 import { BackLink } from '../components/BackLink';
 import { LegalCase, UrgencyLevel, CaseStatus, ScreenId } from '../types';
 import { LawyerOption } from '../hooks/useLawyers';
-import { useNowTick } from '../hooks/useNowTick';
-import { getDeadlineInfo } from '../lib/deadline';
-import { DeadlineBadge } from '../components/DeadlineBadge';
 
 interface AdminCaseListScreenProps {
   cases: LegalCase[];
@@ -38,7 +34,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
   const [selectedUrgency, setSelectedUrgency] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedLawyer, setSelectedLawyer] = useState<string>('all');
-  const now = useNowTick();
 
   // Filtering Logic
   const filteredCases = cases.filter(c => {
@@ -69,12 +64,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
   };
 
   const criticalCount = cases.filter(c => c.urgency === 'critical').length;
-  const activeCases = cases.filter(c => c.status !== 'completed' && c.status !== 'rejected');
-  const overdueCount = activeCases.filter(c => getDeadlineInfo(c.deadlineAt, now).isOverdue).length;
-  const dueSoonCount = activeCases.filter(c => {
-    const info = getDeadlineInfo(c.deadlineAt, now);
-    return !info.isOverdue && (info.tone === 'critical' || info.tone === 'warning');
-  }).length;
 
   return (
     <div className="min-h-screen bg-canvas text-navy py-8 px-4 sm:px-6 lg:px-8 space-y-6 font-sans">
@@ -94,18 +83,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
 
         {/* Urgent Stats Alert */}
         <div className="flex flex-wrap items-center gap-3">
-          {overdueCount > 0 && (
-            <div className="px-4 py-2 rounded-xl bg-red-600 border border-red-700 flex items-center space-x-2 text-xs text-white shadow-sm animate-pulse">
-              <AlertCircle className="w-4 h-4" />
-              <span><strong className="text-sm">{overdueCount}</strong> Dosyanın Son Tarihi Geçti</span>
-            </div>
-          )}
-          {dueSoonCount > 0 && (
-            <div className="px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 flex items-center space-x-2 text-xs text-amber-900 shadow-sm">
-              <Clock className="w-4 h-4 text-amber-600" />
-              <span><strong className="text-amber-700 text-sm">{dueSoonCount}</strong> Dosyanın Süresi Yaklaşıyor</span>
-            </div>
-          )}
           <div className="px-4 py-2 rounded-xl bg-red-50 border border-red-200 flex items-center space-x-2 text-xs text-red-900 shadow-sm">
             <Flame className="w-4 h-4 text-red-600 animate-bounce" />
             <span><strong className="text-red-700 text-sm">{criticalCount}</strong> Adet Çok Acil Dosya Müdahale Bekliyor</span>
@@ -197,7 +174,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                 <th className="p-4">Dosya Kodu / Müşteri</th>
                 <th className="p-4">Süreç Türü & Şehir</th>
                 <th className="p-4">Aciliyet Etiketi</th>
-                <th className="p-4">Kalan Süre</th>
                 <th className="p-4">Mevcut Durum</th>
                 <th className="p-4">Son Güncelleme</th>
                 <th className="p-4">Atanan Avukat</th>
@@ -208,21 +184,20 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
             <tbody className="divide-y divide-[#d7dee8]">
               {loading && (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center text-[#5b6b7c]">
+                  <td colSpan={7} className="p-10 text-center text-[#5b6b7c]">
                     <div className="w-6 h-6 border-2 border-[#d7dee8] border-t-navy rounded-full animate-spin mx-auto" />
                   </td>
                 </tr>
               )}
               {!loading && filteredCases.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center text-[#5b6b7c] text-sm">
+                  <td colSpan={7} className="p-10 text-center text-[#5b6b7c] text-sm">
                     Kriterlere uyan dosya bulunamadı.
                   </td>
                 </tr>
               )}
               {!loading && filteredCases.map(c => {
                 const isCritical = c.urgency === 'critical';
-                const deadlineInfo = getDeadlineInfo(c.deadlineAt, now);
 
                 return (
                   <tr
@@ -270,11 +245,6 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                           Normal
                         </span>
                       )}
-                    </td>
-
-                    {/* Deadline Countdown */}
-                    <td className="p-4">
-                      <DeadlineBadge info={deadlineInfo} />
                     </td>
 
                     {/* Status Badge */}

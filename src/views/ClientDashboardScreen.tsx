@@ -18,9 +18,6 @@ import {
 } from 'lucide-react';
 import { BackLink } from '../components/BackLink';
 import { Language, LegalCase, ScreenId } from '../types';
-import { useNowTick } from '../hooks/useNowTick';
-import { getDeadlineInfo } from '../lib/deadline';
-import { DeadlineBadge } from '../components/DeadlineBadge';
 import { getSignedDocumentUrl } from '../lib/storage';
 import { isValidFullName, isValidPhone } from '../lib/validation';
 import { useToast } from '../hooks/useToast';
@@ -69,7 +66,6 @@ export const ClientDashboardScreen: React.FC<ClientDashboardScreenProps> = ({
   );
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const now = useNowTick();
   const { showError, showSuccess } = useToast();
 
   useEffect(() => {
@@ -94,16 +90,7 @@ export const ClientDashboardScreen: React.FC<ClientDashboardScreenProps> = ({
     [cases],
   );
 
-  const reminders = cases
-    .map(c => ({ case: c, deadline: getDeadlineInfo(c.deadlineAt, now) }))
-    .filter(
-      r =>
-        r.case.status === 'pending_docs' ||
-        r.deadline.tone === 'critical' ||
-        r.deadline.tone === 'warning' ||
-        r.deadline.isOverdue,
-    )
-    .sort((a, b) => a.deadline.msRemaining - b.deadline.msRemaining);
+  const reminders = cases.filter(c => c.status === 'pending_docs');
 
   const getStatusBadge = (status: LegalCase['status']) => {
     switch (status) {
@@ -381,7 +368,7 @@ export const ClientDashboardScreen: React.FC<ClientDashboardScreenProps> = ({
                         Şu anda bekleyen bir hatırlatma yok.
                       </p>
                     )}
-                    {reminders.map(({ case: c, deadline }) => (
+                    {reminders.map(c => (
                       <button
                         key={c.id}
                         onClick={() => {
@@ -389,26 +376,13 @@ export const ClientDashboardScreen: React.FC<ClientDashboardScreenProps> = ({
                           onSelectCase(c);
                           onNavigate('case_timeline', c.id);
                         }}
-                        className={`w-full text-left p-2.5 rounded-lg border space-y-1 transition hover:opacity-90 ${
-                          deadline.isOverdue || deadline.tone === 'critical'
-                            ? 'bg-red-50 border-red-200'
-                            : 'bg-amber-50 border-amber-200'
-                        }`}
+                        className="w-full text-left p-2.5 rounded-lg border space-y-1 transition hover:opacity-90 bg-amber-50 border-amber-200"
                       >
-                        <div
-                          className={`flex justify-between font-bold text-[11px] ${
-                            deadline.isOverdue || deadline.tone === 'critical'
-                              ? 'text-red-800'
-                              : 'text-amber-800'
-                          }`}
-                        >
+                        <div className="flex justify-between font-bold text-[11px] text-amber-800">
                           <span>{c.caseNumber}</span>
-                          {deadline.hasDeadline && <DeadlineBadge info={deadline} />}
                         </div>
                         <p className="text-[#5b6b7c] text-[11px]">
-                          {c.status === 'pending_docs'
-                            ? `${c.caseType} dosyanız için ek evrak yüklemeniz bekleniyor.`
-                            : `${c.caseType} dosyanızın son tarihi yaklaşıyor.`}
+                          {`${c.caseType} dosyanız için ek evrak yüklemeniz bekleniyor.`}
                         </p>
                       </button>
                     ))}
@@ -494,9 +468,6 @@ export const ClientDashboardScreen: React.FC<ClientDashboardScreenProps> = ({
                           <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                             <span className="font-mono text-xs font-bold text-gold">{c.caseNumber}</span>
                             {getUrgencyBadge(c.urgency)}
-                            {getDeadlineInfo(c.deadlineAt, now).hasDeadline && (
-                              <DeadlineBadge info={getDeadlineInfo(c.deadlineAt, now)} />
-                            )}
                           </div>
                           <h4 className="font-display font-semibold text-lg text-navy group-hover:text-gold transition">
                             {c.caseType}

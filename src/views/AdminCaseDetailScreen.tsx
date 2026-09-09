@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   CheckCircle2,
   XCircle,
@@ -9,10 +9,12 @@ import {
   MessageSquare,
   Plus,
   Eye,
-  Loader2
-} from 'lucide-react';;
+  Loader2,
+  Upload,
+  AlertCircle,
+} from 'lucide-react';
 import { BackLink } from '../components/BackLink';
-import { LegalCase, CaseStatus, CaseDocument, ScreenId } from '../types';
+import { LegalCase, CaseStatus, ScreenId } from '../types';
 import { getSignedDocumentUrl } from '../lib/storage';
 import { useCaseMessages } from '../hooks/useCaseMessages';
 import { LawyerOption } from '../hooks/useLawyers';
@@ -27,6 +29,8 @@ interface AdminCaseDetailScreenProps {
   onRejectDocument: (caseId: string, docId: string, reason: string) => void | Promise<void>;
   onAddInternalNote: (caseId: string, noteText: string) => void | Promise<void>;
   onAssignLawyer: (caseId: string, lawyerId: string) => void | Promise<void>;
+  onRequestDocuments: (caseId: string, note: string) => void | Promise<void>;
+  onShareDocumentWithClient: (caseId: string, file: File) => void | Promise<void>;
   onNavigate: (screen: ScreenId) => void;
 }
 
@@ -39,6 +43,8 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
   onRejectDocument,
   onAddInternalNote,
   onAssignLawyer,
+  onRequestDocuments,
+  onShareDocumentWithClient,
   onNavigate,
 }) => {
   const [rejectionReason, setRejectionReason] = useState('');
@@ -51,6 +57,10 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [processingDocId, setProcessingDocId] = useState<string | null>(null);
   const [addingNote, setAddingNote] = useState(false);
+  const [requestNote, setRequestNote] = useState('');
+  const [requestingDocs, setRequestingDocs] = useState(false);
+  const [sharingFile, setSharingFile] = useState(false);
+  const shareInputRef = useRef<HTMLInputElement>(null);
   const { showError } = useToast();
 
   const { messages, sendMessage } = useCaseMessages(currentCase.id, {
@@ -102,6 +112,24 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
     setAssigningLawyer(true);
     await onAssignLawyer(currentCase.id, lawyerId);
     setAssigningLawyer(false);
+  };
+
+  const handleRequestDocs = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestNote.trim()) return;
+    setRequestingDocs(true);
+    await onRequestDocuments(currentCase.id, requestNote.trim());
+    setRequestingDocs(false);
+    setRequestNote('');
+  };
+
+  const handleShareFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setSharingFile(true);
+    await onShareDocumentWithClient(currentCase.id, file);
+    setSharingFile(false);
   };
 
   const handleAdminChatSubmit = async (e: React.FormEvent) => {
@@ -208,6 +236,62 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
             </div>
           </div>
 
+          <div className="bg-white border border-gold/40 rounded-2xl p-6 shadow-sm space-y-4 text-xs">
+            <div className="flex items-center space-x-2 text-navy">
+              <AlertCircle className="w-4 h-4 text-gold" />
+              <h3 className="font-extrabold text-sm uppercase tracking-wider">Müşteriden Belge İste</h3>
+            </div>
+            <p className="text-[#5b6b7c]">
+              Durum dropdown&apos;ına bağlı kalmadan ek belge talebi başlatır; müşteri süreç kartında görür.
+            </p>
+            <form onSubmit={handleRequestDocs} className="space-y-3">
+              <textarea
+                value={requestNote}
+                onChange={(e) => setRequestNote(e.target.value)}
+                rows={3}
+                placeholder="Örn: Kira sözleşmesinin noter onaylı kopyasını ve son 3 ay banka ekstresini yükleyin."
+                disabled={requestingDocs}
+                className="w-full p-3 rounded-xl bg-navy-soft border border-[#d7dee8] text-navy text-xs focus:outline-none focus:border-navy font-medium disabled:opacity-60"
+              />
+              <button
+                type="submit"
+                disabled={requestingDocs || !requestNote.trim()}
+                className="px-4 py-2.5 rounded-xl bg-gold hover:brightness-105 disabled:opacity-60 text-navy font-bold text-xs shadow-xs transition flex items-center space-x-1.5"
+              >
+                {requestingDocs ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                <span>Belge Talebini Gönder</span>
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-white border border-[#d7dee8] rounded-2xl p-6 shadow-sm space-y-4 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center space-x-2 text-navy">
+                <Upload className="w-4 h-4 text-gold" />
+                <h3 className="font-extrabold text-sm uppercase tracking-wider">Müvekkile Dosya Yükle</h3>
+              </div>
+              <span className="text-[10px] font-bold text-[#5b6b7c]">Dosya Evrakları + kronoloji</span>
+            </div>
+            <p className="text-[#5b6b7c]">
+              Paylaştığınız dosya müşterinin evrak listesinde &quot;Avukat&quot; etiketiyle ve süreç adımı olarak görünür.
+            </p>
+            <input
+              ref={shareInputRef}
+              type="file"
+              className="hidden"
+              onChange={handleShareFileChange}
+            />
+            <button
+              type="button"
+              onClick={() => shareInputRef.current?.click()}
+              disabled={sharingFile}
+              className="px-4 py-2.5 rounded-xl bg-navy hover:bg-navy/90 disabled:opacity-60 text-white font-bold text-xs shadow-xs transition flex items-center space-x-1.5"
+            >
+              {sharingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              <span>Dosya Seç ve Paylaş</span>
+            </button>
+          </div>
+
           <div className="bg-white border border-[#d7dee8] rounded-2xl p-6 shadow-sm space-y-4 text-xs">
             <div className="flex justify-between items-center border-b border-[#d7dee8] pb-3">
               <h3 className="font-extrabold text-sm text-navy flex items-center space-x-2">
@@ -227,7 +311,10 @@ export const AdminCaseDetailScreen: React.FC<AdminCaseDetailScreenProps> = ({
                       </div>
                       <div>
                         <h4 className="font-bold text-navy">{doc.name}</h4>
-                        <p className="text-[11px] text-[#5b6b7c]">Yüklenme: {doc.uploadedAt} • {doc.size}</p>
+                        <p className="text-[11px] text-[#5b6b7c]">
+                          Yüklenme: {doc.uploadedAt} • {doc.size}
+                          {doc.type === 'lawyer_share' ? ' • Avukat paylaşımı' : ''}
+                        </p>
                       </div>
                     </div>
 

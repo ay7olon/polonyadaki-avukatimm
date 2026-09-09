@@ -23,15 +23,14 @@ interface AdminCaseListScreenProps {
   cases: LegalCase[];
   lawyers: LawyerOption[];
   loading?: boolean;
-  onSelectCase: (c: LegalCase) => void;
-  onNavigate: (screen: ScreenId) => void;
+  onSelectCase?: (c: LegalCase) => void;
+  onNavigate: (screen: ScreenId, caseId?: string) => void;
 }
 
 export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
   cases,
   lawyers,
   loading,
-  onSelectCase,
   onNavigate,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -227,8 +226,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                   <tr
                     key={c.id}
                     onClick={() => {
-                      onSelectCase(c);
-                      onNavigate('admin_case_detail');
+                      onNavigate('admin_case_detail', c.id);
                     }}
                     className={`cursor-pointer transition hover:bg-navy-soft ${
                       isCritical
@@ -304,8 +302,7 @@ export const AdminCaseListScreen: React.FC<AdminCaseListScreenProps> = ({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onSelectCase(c);
-                          onNavigate('admin_case_detail');
+                          onNavigate('admin_case_detail', c.id);
                         }}
                         className="px-3 py-1.5 rounded-lg bg-navy hover:bg-navy-2 text-white font-bold text-xs transition flex items-center space-x-1 ml-auto shadow-xs"
                       >

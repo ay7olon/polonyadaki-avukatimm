@@ -102,17 +102,17 @@ gcloud run deploy polonyadaki-avukatim \
 
 ### CI
 
-`.github/workflows/ci.yml`, her push/PR'da tip kontrolü, birim testleri ve production build'ini otomatik çalıştırır. Gerçek Supabase proje bilgilerini repo secrets olarak (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) eklemeniz önerilir; eklenmezse CI, build'in başarılı olduğunu doğrulamak için placeholder değerlerle devam eder.
+CI henüz `main` üzerinde zorunlu değildir. İsteğe bağlı olarak tip kontrolü (`npm run lint`), birim testleri (`npm test`) ve production build (`npm run build`) lokalde veya kendi workflow’unuzda çalıştırılabilir.
 
 ## Proje Yapısı
 
 ```
 src/
-  components/     Paylaşılan UI bileşenleri (Header, Footer, DeadlineBadge, ...)
+  components/     Paylaşılan UI bileşenleri (Header, Footer, ...)
   hooks/          useAuth, useCases, useLawyers, useCaseMessages, useToast, ...
-  lib/            supabaseClient, caseMappers, storage, deadline, validation
+  lib/            supabaseClient, caseMappers, storage, validation
   views/          Ekranlar (Landing, Auth, ClientDashboard, AdminCaseList, ...)
-  data/           Statik metinler ve tasarım notları
+  data/           Statik metinler (UI çevirileri vb.)
 supabase/
   migrations/     Şema ve RLS politikaları (SQL)
   seed/           Demo kullanıcı/dosya verisi oluşturan script

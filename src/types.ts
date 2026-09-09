@@ -85,15 +85,3 @@ export interface LegalCase {
   messages: ChatMessage[];
   formSummary: Record<string, string>;
 }
-
-export interface ScreenDesignNote {
-  screenId: ScreenId;
-  screenNumber: number;
-  screenName: string;
-  targetUser: 'Client' | 'Lawyer/Admin' | 'Public' | 'Client & Lawyer';
-  purpose: string;
-  layoutStructure: string;
-  colorPaletteNotes: string;
-  componentArchitecture: string[];
-  devNotesForCursor: string;
-}

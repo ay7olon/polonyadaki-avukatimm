@@ -26,6 +26,7 @@ import {
   paths,
   screenFromPathname,
 } from './lib/routes';
+import { addLawyerShareTimelineStep, ensurePendingDocsTimelineStep } from './lib/timelineSync';
 
 import { LandingScreen } from './views/LandingScreen';
 import { AuthScreen } from './views/AuthScreen';
@@ -150,12 +151,14 @@ function MessagingRoute({
   sessionUserId,
   userRole,
   onNavigate,
+  onRegisterLawyerSharedDocument,
 }: {
   cases: ReturnType<typeof useCases>['cases'];
   casesLoading: boolean;
   sessionUserId: string;
   userRole: NonNullable<ReturnType<typeof useAuth>['profile']>['role'];
   onNavigate: (screen: ScreenId, caseId?: string) => void;
+  onRegisterLawyerSharedDocument: (caseId: string, file: File, storagePath: string) => Promise<void>;
 }) {
   const { caseId } = useParams<{ caseId?: string }>();
 
@@ -170,6 +173,7 @@ function MessagingRoute({
       currentUserId={sessionUserId}
       currentUserRole={userRole}
       onNavigate={onNavigate}
+      onRegisterLawyerSharedDocument={onRegisterLawyerSharedDocument}
     />
   );
 }
@@ -184,6 +188,8 @@ function AdminCaseDetailRoute({
   onRejectDocument,
   onAddInternalNote,
   onAssignLawyer,
+  onRequestDocuments,
+  onShareDocumentWithClient,
   onNavigate,
 }: {
   cases: ReturnType<typeof useCases>['cases'];
@@ -195,6 +201,8 @@ function AdminCaseDetailRoute({
   onRejectDocument: (caseId: string, docId: string, reason: string) => Promise<void>;
   onAddInternalNote: (caseId: string, noteText: string) => Promise<void>;
   onAssignLawyer: (caseId: string, lawyerId: string) => Promise<void>;
+  onRequestDocuments: (caseId: string, note: string) => Promise<void>;
+  onShareDocumentWithClient: (caseId: string, file: File) => Promise<void>;
   onNavigate: (screen: ScreenId, caseId?: string) => void;
 }) {
   const { caseId } = useParams<{ caseId: string }>();
@@ -218,6 +226,8 @@ function AdminCaseDetailRoute({
       onRejectDocument={onRejectDocument}
       onAddInternalNote={onAddInternalNote}
       onAssignLawyer={onAssignLawyer}
+      onRequestDocuments={onRequestDocuments}
+      onShareDocumentWithClient={onShareDocumentWithClient}
       onNavigate={onNavigate}
     />
   );
@@ -337,6 +347,16 @@ export default function App() {
       showError(`Dosya durumu güncellenemedi: ${error.message}`);
       return;
     }
+    if (newStatus === 'pending_docs') {
+      const { error: stepError } = await ensurePendingDocsTimelineStep(
+        caseId,
+        'Avukat ek belge talep etti. Lütfen Dosya Evrakları bölümünden yükleyin.',
+        profile?.full_name ?? undefined
+      );
+      if (stepError) {
+        showError(`Süreç adımı güncellenemedi: ${stepError}`);
+      }
+    }
     showSuccess('Dosya durumu güncellendi.');
     await refetchCases();
   };
@@ -370,7 +390,71 @@ export default function App() {
     if (caseError) {
       showError(`Dosya durumu güncellenemedi: ${caseError.message}`);
     }
+    const { error: stepError } = await ensurePendingDocsTimelineStep(
+      caseId,
+      reason.trim() || 'Belge reddedildi; düzeltilmiş evrak bekleniyor.',
+      profile?.full_name ?? undefined
+    );
+    if (stepError) {
+      showError(`Süreç adımı güncellenemedi: ${stepError}`);
+    }
     showSuccess('Belge reddedildi, müşteriye bildirildi.');
+    await refetchCases();
+  };
+
+  const handleRequestDocuments = async (caseId: string, note: string) => {
+    const { error: caseError } = await supabase
+      .from('legal_cases')
+      .update({ status: 'pending_docs' })
+      .eq('id', caseId);
+    if (caseError) {
+      showError(`Belge talebi kaydedilemedi: ${caseError.message}`);
+      return;
+    }
+    const { error: stepError } = await ensurePendingDocsTimelineStep(
+      caseId,
+      note.trim() || 'Avukat ek belge talep etti.',
+      profile?.full_name ?? undefined
+    );
+    if (stepError) {
+      showError(`Süreç adımı güncellenemedi: ${stepError}`);
+      return;
+    }
+    showSuccess('Müşteriden belge talep edildi.');
+    await refetchCases();
+  };
+
+  const handleShareDocumentWithClient = async (caseId: string, file: File) => {
+    const { path, error: uploadError } = await uploadCaseDocumentFile(caseId, file);
+    if (uploadError) {
+      showError(`Dosya yüklenemedi: ${uploadError}`);
+      return;
+    }
+    await registerLawyerSharedDocument(caseId, file, path);
+  };
+
+  const registerLawyerSharedDocument = async (caseId: string, file: File, storagePath: string) => {
+    const { error: insertError } = await supabase.from('case_documents').insert({
+      case_id: caseId,
+      name: file.name,
+      size: formatFileSize(file.size),
+      type: 'lawyer_share',
+      status: 'approved',
+      storage_path: storagePath,
+    });
+    if (insertError) {
+      showError(`Belge kaydı başarısız: ${insertError.message}`);
+      return;
+    }
+    const { error: stepError } = await addLawyerShareTimelineStep(
+      caseId,
+      file.name,
+      profile?.full_name ?? undefined
+    );
+    if (stepError) {
+      showError(`Süreç adımı eklenemedi: ${stepError}`);
+    }
+    showSuccess('Dosya müvekkile paylaşıldı.');
     await refetchCases();
   };
 
@@ -508,6 +592,7 @@ export default function App() {
                       sessionUserId={session.user.id}
                       userRole={profile.role}
                       onNavigate={handleNavigate}
+                      onRegisterLawyerSharedDocument={registerLawyerSharedDocument}
                     />
                   ) : (
                     <Navigate to={paths.auth} replace />
@@ -524,6 +609,7 @@ export default function App() {
                       sessionUserId={session.user.id}
                       userRole={profile.role}
                       onNavigate={handleNavigate}
+                      onRegisterLawyerSharedDocument={registerLawyerSharedDocument}
                     />
                   ) : (
                     <Navigate to={paths.auth} replace />
@@ -559,6 +645,8 @@ export default function App() {
                       onRejectDocument={handleRejectDocument}
                       onAddInternalNote={handleAddInternalNote}
                       onAssignLawyer={handleAssignLawyer}
+                      onRequestDocuments={handleRequestDocuments}
+                      onShareDocumentWithClient={handleShareDocumentWithClient}
                       onNavigate={handleNavigate}
                     />
                   ) : (

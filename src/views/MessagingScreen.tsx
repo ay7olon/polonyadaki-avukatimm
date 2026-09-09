@@ -9,7 +9,7 @@ import {
   Info,
   Loader2,
   MessageSquare
-} from 'lucide-react';;
+} from 'lucide-react';
 import { BackLink } from '../components/BackLink';
 import { LegalCase, ScreenId, UserRole } from '../types';
 import { useCaseMessages } from '../hooks/useCaseMessages';
@@ -23,6 +23,7 @@ interface MessagingScreenProps {
   currentUserId: string;
   currentUserRole: UserRole;
   onNavigate: (screen: ScreenId, caseId?: string) => void;
+  onRegisterLawyerSharedDocument?: (caseId: string, file: File, storagePath: string) => Promise<void>;
 }
 
 export const MessagingScreen: React.FC<MessagingScreenProps> = ({
@@ -31,6 +32,7 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
   currentUserId,
   currentUserRole,
   onNavigate,
+  onRegisterLawyerSharedDocument,
 }) => {
   const [selectedCaseId, setSelectedCaseId] = useState<string>(activeCaseId || cases[0]?.id || '');
   const [inputText, setInputText] = useState('');
@@ -97,6 +99,9 @@ export const MessagingScreen: React.FC<MessagingScreenProps> = ({
           path: path ?? undefined,
         },
       ];
+      if (path && senderRole === 'lawyer' && onRegisterLawyerSharedDocument) {
+        await onRegisterLawyerSharedDocument(selectedCase.id, attachedFile, path);
+      }
     }
 
     const { error } = await sendMessage(currentUserId, senderRole, inputText.trim(), attachments);
